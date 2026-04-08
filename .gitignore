@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env*.local
+
+.prettierrc
+
+# Common ignores
+node_modules
+.next/
+.vscode/
+.idea/
+.DS_Store
+.next-env.d.ts
+*.log
+next-env.d.ts

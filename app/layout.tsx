@@ -1,0 +1,46 @@
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import { Navbar } from "@/components/navbar";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+export const metadata: Metadata = {
+  title: "FooFlix - Stream Movies & Series",
+  description:
+    "Your ultimate destination for streaming movies and TV series. Watch anywhere, anytime.",
+  keywords: [
+    "movies",
+    "series",
+    "streaming",
+    "watch",
+    "entertainment",
+    "watch-together",
+  ],
+  appleWebApp: {
+    title: "FooFlix",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6b21a8",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="dark">
+      <body
+        className={`${inter.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
+      >
+        <Navbar />
+        <main>{children}</main>
+      </body>
+    </html>
+  );
+}
