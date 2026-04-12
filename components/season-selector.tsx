@@ -155,8 +155,6 @@ export function SeasonSelector({
     }));
   }, [seasonDetails, mappedUnifiedEpisodes]);
 
-  console.log("unifiedEpisodes", unifiedEpisodes);
-
   if (validSeasons.length === 0) return null;
 
   return (

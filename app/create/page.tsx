@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Search, Film, Tv } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,25 +11,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UploadForm } from "@/components/upload-form";
 import {
   searchMovies,
   searchTVShows,
   isTVShow,
+  isTVShowDetails,
+  isMovieDetails,
 } from "@/services/tmdb";
 import type {
   TMDBMovie,
   TMDBTVShow,
-  TMDBEpisode,
   MediaType,
 } from "@/types/tmdb";
-import UploadFormTV from "@/app/create/upload-form-tv";
 import SearchResults from "./search-results";
-import SelectedItemInfo from "./selected-item-info";
+import { useSearchParams, useRouter } from "next/navigation";
+import useTMDBFlix from "@/hooks/use-tmdb-flix";
+import { unifiedMovie, unifiedSeries } from "@/services/unified";
+import { isFlixMovie, isFlixSeries } from "@/services/flix";
+import FlixFormManager from "@/components/flix-form-manager";
 
 export default function CreatePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState<MediaType>("movie");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
+  const [searchType, setSearchType] = useState<MediaType>(
+    (searchParams.get("type") as MediaType) ?? "movie",
+  );
   const [searchResults, setSearchResults] = useState<
     (TMDBMovie | TMDBTVShow)[]
   >([]);
@@ -37,18 +45,27 @@ export default function CreatePage() {
   const [selectedItem, setSelectedItem] = useState<
     TMDBMovie | TMDBTVShow | null
   >(null);
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  const [selectedEpisode, setSelectedEpisode] = useState<TMDBEpisode | null>(
-    null,
-  );
+
+  const isTV = selectedItem ? isTVShow(selectedItem) : false;
+  const itemType = isTV ? "series" : "movie";
+  const itemId = selectedItem?.id ?? null;
+
+  const {
+    flix,
+    tmdb,
+  } = useTMDBFlix(itemType, itemId);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
 
+    const params = new URLSearchParams();
+    params.set("q", searchQuery);
+    params.set("type", searchType);
+
+    router.replace(`/create?${params.toString()}`);
+
     setIsSearching(true);
     setSelectedItem(null);
-    setSelectedSeason(null);
-    setSelectedEpisode(null);
 
     try {
       if (searchType === "movie") {
@@ -64,13 +81,32 @@ export default function CreatePage() {
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery, searchType]);
+  }, [searchQuery, searchType, router]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      handleSearch();
+    }
+  }, []);
 
   const handleSelectItem = (item: TMDBMovie | TMDBTVShow) => {
     setSelectedItem(item);
-    setSelectedSeason(null);
-    setSelectedEpisode(null);
   };
+
+  let unifiedItem = null;
+
+  if (tmdb) {
+    if (isTVShowDetails(tmdb)) {
+      let flixItem = flix && isFlixSeries(flix) ? flix : null;
+
+      unifiedItem = unifiedSeries(tmdb, flixItem);
+    }
+    else if (isMovieDetails(tmdb)) {
+      let flixItem = flix && isFlixMovie(flix) ? flix : null;
+
+      unifiedItem = unifiedMovie(tmdb, flixItem);
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 pt-24 pb-8">
@@ -145,34 +181,7 @@ export default function CreatePage() {
         {/* Right Column - Upload Form */}
         <div className="lg:w-[480px] shrink-0">
           {selectedItem ? (
-            <div className="space-y-6">
-              {/* Selected Item Info */}
-              <SelectedItemInfo tmdbMedia={selectedItem} />
-
-              {/* Upload Form - Movie */}
-              {searchType === "movie" && (
-                <UploadForm
-                  title={`Upload: ${(selectedItem as TMDBMovie).title}`}
-                />
-              )}
-
-              {/* Upload Form - TV Series */}
-              {isTVShow(selectedItem) && (
-                <UploadFormTV
-                  tv={selectedItem}
-                  onEpisodeSelect={(episode) => setSelectedEpisode(episode)}
-                />
-              )}
-
-              {/* Episode Upload Form */}
-              {selectedEpisode && (
-                <UploadForm
-                  title={`Upload: S${selectedSeason}E${selectedEpisode.episode_number}`}
-                  subtitle={selectedEpisode.name}
-                  onClose={() => setSelectedEpisode(null)}
-                />
-              )}
-            </div>
+            <FlixFormManager tmdbMedia={selectedItem} />
           ) : (
             <div className="h-full flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-lg">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">

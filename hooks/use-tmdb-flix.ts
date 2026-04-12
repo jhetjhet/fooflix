@@ -1,8 +1,10 @@
-import { fetchFlixDetails } from "@/services/flix";
-import { getTMDBDetails } from "@/services/tmdb";
+import { fetchFlixDetails, isFlixMovie, isFlixSeries } from "@/services/flix";
+import { getTMDBDetails, isMovieDetails, isTVShowDetails } from "@/services/tmdb";
 import { TMDBTypeMap } from "@/types/tmdb";
 import { FlixTypeMap } from "@/types/flix";
 import useSWR from "swr";
+import { unifiedMovie, unifiedSeries } from "@/services/unified";
+import { UnifiedMovie, UnifiedSeries } from "@/types/unified";
 
 const tmdbTypeMap = {
   movie: "movie",
@@ -14,43 +16,46 @@ type TMDBKeyFor<T extends keyof FlixTypeMap> = (typeof tmdbTypeMap)[T];
 interface TMDBFlixData<T extends keyof FlixTypeMap> {
   tmdb: TMDBTypeMap[TMDBKeyFor<T>] | undefined;
   flix: FlixTypeMap[T] | undefined;
+  unified: UnifiedMovie | UnifiedSeries | null | undefined;
   isLoading: boolean;
-  error: Error;
+  error: Error | null;
   mutateFlix: () => void;
 }
 
 export default function useTMDBFlix<T extends keyof FlixTypeMap>(
   type: T,
-  id: number,
+  id: number | null,
 ): TMDBFlixData<T> {
   const tmdbType = tmdbTypeMap[type];
 
   const {
-    data: tmdbMovie,
+    data: tmdb,
     isLoading: tmdbLoading,
     error: tmdbError,
-  } = useSWR<TMDBTypeMap[TMDBKeyFor<T>]>(`tmdb-${tmdbType}-${id}`, () =>
-    getTMDBDetails({
-      type: tmdbType,
-      id: id,
-    }),
-  );
+  } = useSWR(
+    id ? ['tmdb', tmdbType, id] : null,
+    ([, tmdbType, tmdbId]) => getTMDBDetails({ type: tmdbType, id: tmdbId })
+  )
 
   const {
-    data: flixMovie,
+    data: flix,
     isLoading: flixLoading,
     error: flixError,
     mutate: mutateFlix,
-  } = useSWR<FlixTypeMap[T]>(`flix-${type}-${id}`, () =>
-    fetchFlixDetails({
-      type,
-      id: id.toString(),
-    }),
+  } = useSWR(
+    id ? ['flix', type, id] : null,
+    ([, flixType, flixId]) => fetchFlixDetails({ type: flixType, id: flixId.toString() })
   );
 
+  const unified = !tmdb ? null
+    : isTVShowDetails(tmdb) ? unifiedSeries(tmdb, flix && isFlixSeries(flix) ? flix : null)
+    : isMovieDetails(tmdb) ? unifiedMovie(tmdb, flix && isFlixMovie(flix) ? flix : null)
+    : null;
+
   return {
-    tmdb: tmdbMovie,
-    flix: flixMovie,
+    tmdb: tmdb,
+    flix: flix,
+    unified: unified,
     isLoading: tmdbLoading || flixLoading,
     error: tmdbError || flixError,
     mutateFlix,

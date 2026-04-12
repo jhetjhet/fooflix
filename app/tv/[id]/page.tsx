@@ -26,8 +26,6 @@ export default function TVDetailPage({ params }: TVDetailPageProps) {
     unifiedSeriesData = unifiedSeries(tmdb, flix);
   }
 
-  console.log("unifiedSeriesData", unifiedSeriesData);
-
   return (
     <MediaUnifiedDetailPage media={unifiedSeriesData} isLoading={isLoading} />
   );
