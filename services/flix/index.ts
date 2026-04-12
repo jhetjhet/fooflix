@@ -3,6 +3,34 @@ import { FlixGenre, FlixMediaType, FlixMovie, FlixResponse, FlixSeries, FlixType
 
 const FLIX_API_BASE = 'http://localhost:8000/api/';
 
+export const DEFAULT_FLIX_MOVIE: FlixMovie = {
+  type: "movie",
+  id: "",
+  title: "",
+  tmdb_id: "",
+  poster_path: null,
+  date_release: null,
+  date_upload: "",
+  genres: [],
+  extension: "",
+  has_video: false,
+  video_path: "",
+  video_url: "",
+  subtitles: [],
+};
+
+export const DEFAULT_FLIX_SERIES: FlixSeries = {
+  type: "series",
+  seasons: [],
+  id: "",
+  title: "",
+  tmdb_id: "",
+  poster_path: null,
+  date_release: null,
+  date_upload: "",
+  genres: [],
+};
+
 export async function fetchFlixItems<T>(
   type: FlixMediaType = "all",
   params: Record<string, string> = {},
@@ -80,6 +108,10 @@ export async function fetchFlixGenres(): Promise<FlixGenre[]> {
   }
 
   return response.json() || [];
+}
+
+export function isFlixMovie(item: FlixMovie | FlixSeries): item is FlixMovie {
+  return !("seasons" in item);
 }
 
 export function isFlixSeries(item: FlixMovie | FlixSeries): item is FlixSeries {

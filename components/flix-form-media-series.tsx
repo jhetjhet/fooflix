@@ -1,8 +1,4 @@
-import {
-  TMDBEpisode,
-  TMDBTVShow,
-} from "@/types/tmdb";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,45 +11,58 @@ import {
 import useSWR from "swr";
 import { getTVSeasonDetails } from "@/services/tmdb";
 import { cn } from "@/lib/utils";
+import { UnifiedEpisode, UnifiedSeries } from "@/types/unified";
+import { DEFAULT_UNIFIED_EPISODE } from "@/services/unified";
 
-interface SelectedItemInfoProps {
-  tv: TMDBTVShow;
-  onEpisodeSelect?: (episode: TMDBEpisode) => void;
+interface FlixFormMediaSeriesProps {
+  tv: UnifiedSeries;
+  seasonNumber: number | null;
+  selectedEpisode: UnifiedEpisode | null;
+  setSelectedEpisode?: (episode: UnifiedEpisode | null) => void;
+  setSeasonNumber?: (season: number | null) => void;
 }
 
-export default function UploadFormTV({
+export default function FlixFormMediaSeries({
   tv,
-  onEpisodeSelect,
-}: SelectedItemInfoProps) {
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  const [selectedEpisode, setSelectedEpisode] = useState<TMDBEpisode | null>(
-    null,
-  );
+  seasonNumber,
+  selectedEpisode,
+  setSelectedEpisode,
+  setSeasonNumber,
+}: FlixFormMediaSeriesProps) {
 
   const { data: seasonDetails, isLoading: loadingEpisodes } = useSWR(
-    selectedSeason ? [`tmdb-tv`, tv.id, `season`, selectedSeason] : null,
+    seasonNumber ? [`tv`, tv.id, `season`, seasonNumber] : null,
     ([, tvId, , season]) => getTVSeasonDetails(tvId, season),
   );
 
-  const episodes = seasonDetails?.episodes || [];
+  const mappedUnifiedEpisodes = useMemo(() => {
+    const season = tv.seasons.find((s) => s.season_number === seasonNumber);
+
+    if (!season || !season.episodes) return {};
+
+    return season.episodes.reduce((acc, eps) => {
+      acc[eps.episode_number] = eps;
+      return acc;
+    }, {} as Record<number, UnifiedEpisode>);
+  }, [tv, seasonNumber]);
+
+  const unifiedEpisodes = useMemo<UnifiedEpisode[]>(() => {
+    if (!seasonDetails?.episodes) return [];
+
+    return seasonDetails.episodes.map((eps) => ({
+      ...(mappedUnifiedEpisodes[eps.episode_number] || DEFAULT_UNIFIED_EPISODE),
+      ...eps,
+    }));
+  }, [seasonDetails, mappedUnifiedEpisodes]);
 
   const handleSelectSeason = (seasonNumber: number) => {
-    setSelectedSeason(seasonNumber);
-    setSelectedEpisode(null);
+    setSeasonNumber?.(seasonNumber);
+    setSelectedEpisode?.(null);
   };
 
-  const handleSelectEpisode = (episode: TMDBEpisode) => {
-    setSelectedEpisode(episode);
-
-    if (onEpisodeSelect) {
-      onEpisodeSelect(episode);
-    }
+  const handleSelectEpisode = (episode: UnifiedEpisode) => {
+    setSelectedEpisode?.(episode);
   };
-
-  useEffect(() => {
-    setSelectedSeason(null);
-    setSelectedEpisode(null);
-  }, [tv]);
 
   return (
     <Tabs defaultValue="seasons" className="w-full">
@@ -68,17 +77,17 @@ export default function UploadFormTV({
           {/* Season Selector */}
           <div className="flex items-center gap-3">
             <Select
-              value={selectedSeason?.toString() || ""}
+              value={seasonNumber?.toString() || ""}
               onValueChange={(value) => handleSelectSeason(parseInt(value))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a season" />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map(
-                  (seasonNum) => (
-                    <SelectItem key={seasonNum} value={seasonNum.toString()}>
-                      Season {seasonNum}
+                {tv.seasons.map(
+                  (season) => (
+                    <SelectItem key={season.season_number} value={season.season_number.toString()}>
+                      {season.name ? season.name : `Season ${season.season_number}`}
                     </SelectItem>
                   ),
                 )}
@@ -87,7 +96,7 @@ export default function UploadFormTV({
           </div>
 
           {/* Episodes List */}
-          {selectedSeason && (
+          {seasonNumber && (
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Episodes</h4>
               {loadingEpisodes ? (
@@ -98,13 +107,13 @@ export default function UploadFormTV({
                     <Skeleton key={i} className="h-12 rounded" />
                   ))}
                 </div>
-              ) : episodes.length === 0 ? (
+              ) : unifiedEpisodes.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
                   No episodes found for this season
                 </p>
               ) : (
                 <div className="max-h-64 overflow-y-auto space-y-1">
-                  {episodes.map((episode) => (
+                  {unifiedEpisodes.map((episode) => (
                     <button
                       key={episode.id}
                       onClick={() => handleSelectEpisode(episode)}

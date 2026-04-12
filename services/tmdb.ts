@@ -291,6 +291,12 @@ export function isTVShow(item: TMDBMovie | TMDBTVShow): item is TMDBTVShow {
   return "name" in item;
 }
 
+export function isMovieDetails(
+  item: TMDBMovieDetails | TMDBTVShowDetails,
+): item is TMDBMovieDetails {
+  return "runtime" in item;
+}
+
 export function isTVShowDetails(
   item: TMDBMovieDetails | TMDBTVShowDetails,
 ): item is TMDBTVShowDetails {

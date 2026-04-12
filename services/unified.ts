@@ -15,6 +15,7 @@ import type {
   UnifiedSeason,
   UnifiedEpisode,
 } from "../types/unified";
+import { DEFAULT_FLIX_MOVIE, DEFAULT_FLIX_SERIES } from "./flix";
 
 export const DEFAULT_UNIFIED_EPISODE: UnifiedEpisode = {
   // TMDBEpisode defaults
@@ -28,16 +29,19 @@ export const DEFAULT_UNIFIED_EPISODE: UnifiedEpisode = {
   vote_average: 0,
   runtime: 0,
   // FlixMedia defaults
+  tmdb_id: "",
   extension: "",
   has_video: false, 
   video_path: "",
   video_url: "",
   subtitles: [],
+  flix_exists: false,
 };
 
 function mapEpisode(flixEp: FlixEpisode): UnifiedEpisode {
   return {
     // FlixMedia fields
+    tmdb_id: flixEp.tmdb_id,
     extension: flixEp.extension,
     has_video: flixEp.has_video,
     video_path: flixEp.video_path,
@@ -53,6 +57,7 @@ function mapEpisode(flixEp: FlixEpisode): UnifiedEpisode {
     air_date: "",
     vote_average: 0,
     runtime: 0,
+    flix_exists: false,
   };
 }
 
@@ -70,14 +75,15 @@ function mapSeason(
     air_date: tmdbSeason.air_date,
     // Flix episodes take priority
     episodes: (flixSeason.episodes ?? []).map(mapEpisode),
+    flix_exists: true,
   };
 }
 
 export function unifiedMovie(
   tmdb: TMDBMovieDetails,
-  flix: FlixMovie,
+  flix: FlixMovie | null,
 ): UnifiedMovie {
-  const { id, extension, has_video, video_path, video_url, subtitles } = flix;
+  const { id, extension, has_video, video_path, video_url, subtitles } = flix || DEFAULT_FLIX_MOVIE;
 
   return {
     ...tmdb,
@@ -92,21 +98,31 @@ export function unifiedMovie(
 
 export function unifiedSeries(
   tmdb: TMDBTVShowDetails,
-  flix: FlixSeries,
+  flix: FlixSeries | null,
 ): UnifiedSeries {
-  const tmdbSeasonMap = new Map<number, TMDBSeason>(
-    tmdb.seasons.map((s) => [s.season_number, s]),
+  const flixSeasonMap = new Map<number, FlixSeason>(
+    (flix?.seasons ?? []).map((s) => [s.season_number, s]),
   );
 
-  // Inner join: only include seasons present in flix, using flix episode data
-  const seasons: UnifiedSeason[] = (flix.seasons ?? [])
-    .filter((fs) => tmdbSeasonMap.has(fs.season_number))
-    .map((fs) => mapSeason(tmdbSeasonMap.get(fs.season_number)!, fs));
+  // Left join: all TMDB seasons, merged with flix episode data where available
+  const seasons: UnifiedSeason[] = tmdb.seasons.map((ts) =>
+    mapSeason(ts, flixSeasonMap.get(ts.season_number) ?? { season_number: ts.season_number, title: "", tmdb_id: "", episodes: [] }),
+  );
 
   return {
+    ...DEFAULT_FLIX_SERIES,
     ...tmdb,
-    tmdb_id: flix.tmdb_id,
+    tmdb_id: flix?.tmdb_id || "",
+    flix_id: flix?.id || null,
     seasons,
   };
+}
+
+export function isUnifiedMovie(item: UnifiedMovie | UnifiedSeries): item is UnifiedMovie {
+  return "runtime" in item;
+}
+
+export function isUnifiedSeries(item: UnifiedMovie | UnifiedSeries): item is UnifiedSeries {
+  return "number_of_seasons" in item;
 }
 

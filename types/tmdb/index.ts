@@ -111,7 +111,7 @@ export interface TMDBTVShowDetails extends Omit<TMDBTVShow, "genre_ids"> {
   tagline: string;
   number_of_episodes: number;
   number_of_seasons: number;
-  seasons: TMDBSeason[];
+  seasons: TMDBSeasonDetails[];
   created_by: { id: number; name: string; profile_path: string | null }[];
   credits?: TMDBCredits;
   images?: TMDBImages;
@@ -142,7 +142,7 @@ export interface TMDBEpisode {
 }
 
 export interface TMDBSeasonDetails extends TMDBSeason {
-  episodes: TMDBEpisode[];
+  episodes?: TMDBEpisode[];
 }
 
 export interface TMDBResponse<T> {

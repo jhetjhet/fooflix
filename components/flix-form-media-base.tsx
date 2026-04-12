@@ -1,13 +1,14 @@
-import { getImageUrl, isMovie } from "@/services/tmdb";
-import { TMDBMovie, TMDBTVShow } from "@/types/tmdb";
+import { getImageUrl } from "@/services/tmdb";
+import { isUnifiedSeries } from "@/services/unified";
+import { UnifiedMovie, UnifiedSeries } from "@/types/unified";
 import { Star } from "lucide-react";
 
-interface SelectedItemInfoProps {
-  tmdbMedia: TMDBMovie | TMDBTVShow;
+interface FlixFormMediaBaseProps {
+  unifiedMedia: UnifiedMovie | UnifiedSeries;
 }
 
-export default function SelectedItemInfo({ tmdbMedia }: SelectedItemInfoProps) {
-  const isTV = !isMovie(tmdbMedia);
+export default function FlixFormMediaBase({ unifiedMedia }: FlixFormMediaBaseProps) {
+  const isTV = isUnifiedSeries(unifiedMedia);
 
   return (
     <div className="p-4 rounded-lg bg-card border border-border">
@@ -15,10 +16,10 @@ export default function SelectedItemInfo({ tmdbMedia }: SelectedItemInfoProps) {
         <div className="w-20 h-28 rounded overflow-hidden bg-muted shrink-0">
           <img
             src={getImageUrl(
-              isTV ? tmdbMedia.poster_path : tmdbMedia.poster_path,
+              isTV ? unifiedMedia.poster_path : unifiedMedia.poster_path,
               "w154",
             )}
-            alt={isTV ? tmdbMedia.name : tmdbMedia.title}
+            alt={isTV ? unifiedMedia.name : unifiedMedia.title}
             className="w-full h-full object-cover"
           />
         </div>
@@ -29,19 +30,19 @@ export default function SelectedItemInfo({ tmdbMedia }: SelectedItemInfoProps) {
             </span>
           </div>
           <h3 className="text-lg font-semibold line-clamp-2">
-            {isTV ? tmdbMedia.name : tmdbMedia.title}
+            {isTV ? unifiedMedia.name : unifiedMedia.title}
           </h3>
           <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-            {tmdbMedia.vote_average > 0 && (
+            {unifiedMedia.vote_average > 0 && (
               <span className="flex items-center gap-1">
                 <Star className="size-3 text-yellow-500 fill-yellow-500" />
-                {tmdbMedia.vote_average.toFixed(1)}
+                {unifiedMedia.vote_average.toFixed(1)}
               </span>
             )}
-            {(isTV ? tmdbMedia.first_air_date : tmdbMedia.release_date) && (
+            {(isTV ? unifiedMedia.first_air_date : unifiedMedia.release_date) && (
               <span>
                 {new Date(
-                  isTV ? tmdbMedia.first_air_date : tmdbMedia.release_date,
+                  isTV ? unifiedMedia.first_air_date : unifiedMedia.release_date,
                 ).getFullYear()}
               </span>
             )}
