@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Menu, X, User, LogOut, Plus, Film } from "lucide-react";
@@ -16,16 +16,77 @@ import {
 import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { useAuthContext } from "@/context/authentication";
+import { logoutAction } from "@/app/actions/auth";
+
+interface NavAvatarProps {
+  onSignInClick: () => void;
+}
+
+const NavAvatar = ({ onSignInClick }: NavAvatarProps) => {
+  const { user, isLoggedIn } = useAuthContext();
+  const [isPending, startTransition] = useTransition();
+
+  if (!isLoggedIn)
+    return (
+      <Button onClick={onSignInClick} size="sm">
+        Sign In
+      </Button>
+    );
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative rounded-full">
+          {/* {user?.avatar ? (
+            <img
+              alt={user.name}
+              className="size-8 rounded-full object-cover"
+            />
+          ) : (
+            <User className="size-5" />
+          )} */}
+          <User className="size-5" />
+          <span className="sr-only">User menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <div className="px-2 py-1.5">
+          <p className="text-sm font-medium">{user?.username}</p>
+          <p className="text-xs text-muted-foreground">{user?.email}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => alert("Profile page - Mock feature")}>
+          <User className="mr-2 size-4" />
+          Profile
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => {
+            startTransition(async () => {
+              await logoutAction();
+            });
+          }}
+          className="text-destructive"
+        >
+          <LogOut className="mr-2 size-4" />
+          {isPending ? "Logging out..." : "Logout"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { isLoggedIn, user, logout } = useAuth();
   const router = useRouter();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const { user } = useAuthContext();
+
+  const handleSearch = (e: React.SubmitEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/browse?query=${encodeURIComponent(searchQuery.trim())}`);
@@ -36,8 +97,11 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/browse", label: "Browse" },
-    { href: "/create", label: "Create" },
   ];
+
+  if (user?.can_create_flix) {
+    navLinks.push({ href: "/create", label: "Create" });
+  }
 
   return (
     <>
@@ -100,55 +164,7 @@ export function Navbar() {
             </Button>
 
             {/* Auth Section */}
-            {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative rounded-full"
-                  >
-                    {user?.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="size-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="size-5" />
-                    )}
-                    <span className="sr-only">User menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {user?.email}
-                    </p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => alert("Profile page - Mock feature")}
-                  >
-                    <User className="mr-2 size-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={logout}
-                    className="text-destructive"
-                  >
-                    <LogOut className="mr-2 size-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={() => setAuthModalOpen(true)} size="sm">
-                Sign In
-              </Button>
-            )}
+            <NavAvatar onSignInClick={() => setAuthModalOpen(true)} />
 
             {/* Mobile Menu Toggle */}
             <Button
