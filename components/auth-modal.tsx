@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,19 +15,23 @@ import { loginAction } from "@/app/actions/auth";
 
 interface AuthModalProps {
   open: boolean;
+  setIsLoading: (loading: boolean) => void;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AuthModal({ open, onOpenChange }: AuthModalProps) {
+export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+
+  const [isLoginPending, startLoginTransition] = useTransition();
+
   const { register } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setError("");
 
@@ -36,20 +40,20 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     formData.append("password", password);
 
     if (isLogin) {
-      const res = await loginAction(formData);
+      startLoginTransition(async () => {
+        const res = await loginAction(formData);
 
-      console.log("AuthModal - Login response:", res);
-
-      if (!res.ok) {
-        setError(res.error?.message || "Login failed");
-      } else {
-        // Reset form and close modal
-        setName("");
-        setUsername("");
-        setPassword("");
-        setConfirmPassword("");
-        onOpenChange(false);
-      }
+        if (!res.ok) {
+          setError(res.error?.message || "Login failed");
+        } else {
+          // Reset form and close modal
+          setName("");
+          setUsername("");
+          setPassword("");
+          setConfirmPassword("");
+          onOpenChange(false);
+        }
+      });
     } else {
       if (password !== confirmPassword) {
         alert("Passwords do not match!");
@@ -66,6 +70,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setPassword("");
     setConfirmPassword("");
   };
+
+  useEffect(() => {
+    setIsLoading?.(isLoginPending);
+  }, [isLoginPending]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

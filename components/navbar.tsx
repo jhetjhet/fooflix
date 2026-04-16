@@ -14,25 +14,46 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AuthModal } from "@/components/auth-modal";
-import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/context/authentication";
 import { logoutAction } from "@/app/actions/auth";
 
 interface NavAvatarProps {
+  isLogInLoading?: boolean;
+  setIsLogInLoading?: (loading: boolean) => void;
   onSignInClick: () => void;
 }
 
-const NavAvatar = ({ onSignInClick }: NavAvatarProps) => {
+const NavAvatar = ({
+  onSignInClick,
+  isLogInLoading = false,
+  setIsLogInLoading,
+}: NavAvatarProps) => {
   const { user, isLoggedIn } = useAuthContext();
-  const [isPending, startTransition] = useTransition();
+  const [isLogoutPending, startLogoutTransition] = useTransition();
 
-  if (!isLoggedIn)
+  useEffect(() => {
+    if (!isLogoutPending) {
+      setIsLogInLoading?.(false);
+    }
+  }, [isLogoutPending, setIsLogInLoading]);
+
+  if (isLogInLoading) {
+    return (
+      <span className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-secondary/50">
+        <Film className="animate-spin size-4" />
+        Loading...
+      </span>
+    );
+  }
+
+  if (!isLoggedIn) {
     return (
       <Button onClick={onSignInClick} size="sm">
         Sign In
       </Button>
     );
+  }
 
   return (
     <DropdownMenu>
@@ -63,14 +84,15 @@ const NavAvatar = ({ onSignInClick }: NavAvatarProps) => {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            startTransition(async () => {
+            setIsLogInLoading?.(true);
+            startLogoutTransition(async () => {
               await logoutAction();
             });
           }}
           className="text-destructive"
         >
           <LogOut className="mr-2 size-4" />
-          {isPending ? "Logging out..." : "Logout"}
+          {isLogoutPending ? "Logging out..." : "Logout"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -82,6 +104,8 @@ export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+
   const router = useRouter();
 
   const { user } = useAuthContext();
@@ -164,7 +188,11 @@ export function Navbar() {
             </Button>
 
             {/* Auth Section */}
-            <NavAvatar onSignInClick={() => setAuthModalOpen(true)} />
+            <NavAvatar
+              onSignInClick={() => setAuthModalOpen(true)}
+              isLogInLoading={isLoginLoading}
+              setIsLogInLoading={setIsLoginLoading}
+            />
 
             {/* Mobile Menu Toggle */}
             <Button
@@ -227,7 +255,13 @@ export function Navbar() {
         </div>
       </header>
 
-      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+      <AuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        setIsLoading={(loading) => {
+          setIsLoginLoading(loading);
+        }}
+      />
     </>
   );
 }
