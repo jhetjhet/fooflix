@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
-import { loginAction } from "@/app/actions/auth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { loginAction, registerAction } from "@/app/actions/auth";
 
 interface AuthModalProps {
   open: boolean;
@@ -21,21 +21,21 @@ interface AuthModalProps {
 
 export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   const [isLoginPending, startLoginTransition] = useTransition();
-
-  const { register } = useAuth();
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setError("");
 
     const formData = new FormData();
+
     formData.append("username", username);
     formData.append("password", password);
 
@@ -47,7 +47,7 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
           setError(res.error?.message || "Login failed");
         } else {
           // Reset form and close modal
-          setName("");
+          setEmail("");
           setUsername("");
           setPassword("");
           setConfirmPassword("");
@@ -56,19 +56,43 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
       });
     } else {
       if (password !== confirmPassword) {
-        alert("Passwords do not match!");
+        setError("Passwords do not match");
         return;
       }
-      register(name, username, password);
+
+      formData.append("email", email);
+
+      const res = await registerAction(formData);
+
+      if (!res.ok) {
+        if (res.error.fields) {
+          setError(Object.values(res.error.fields)
+            .flat()
+            .join(" ") || "Registration failed");
+        }
+        else {
+          setError(res.error?.message || "Registration failed");
+        }
+        return;
+      }
+
+      setShowSuccessBanner(true);
+
+      setTimeout(() => {
+        setShowSuccessBanner(false);
+        toggleMode();
+      }, 2000);
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-    setName("");
+    setEmail("");
     setUsername("");
     setPassword("");
     setConfirmPassword("");
+    setError("");
+    setShowSuccessBanner(false);
   };
 
   useEffect(() => {
@@ -92,15 +116,15 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
           {!isLogin && (
             <div className="flex flex-col gap-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Name
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
               </label>
               <Input
-                id="name"
-                type="text"
-                placeholder="Enter your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required={!isLogin}
               />
             </div>
@@ -152,6 +176,12 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
 
           {error && (
             <p className="text-sm text-destructive text-center">{error}</p>
+          )}
+
+          {showSuccessBanner && (
+            <Alert className="bg-green-50 border-green-200 text-green-800">
+              <AlertDescription>Registration successful!</AlertDescription>
+            </Alert>
           )}
 
           <Button type="submit" className="w-full mt-2">

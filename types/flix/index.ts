@@ -78,15 +78,23 @@ export interface FlixBrowseFilters {
   year: number | null;
   page: number;
 }
+
 export interface FlixUser {
   id: string;
   email: string;
   username: string;
   can_create_flix: boolean;
 }
+
 export interface JWTResponse {
   refresh: string;
   access: string;
   access_expiration: number; // Unix timestamp in seconds
   refresh_expiration: number; // Unix timestamp in seconds
+}
+
+export interface FlixUserRegister {
+  username: string;
+  email: string;
+  password: string;
 }
