@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
+import { loginAction } from "@/app/actions/auth";
 
 interface AuthModalProps {
   open: boolean;
@@ -20,36 +21,48 @@ interface AuthModalProps {
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { login, register } = useAuth();
+  const [error, setError] = useState("");
+  const { register } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
 
     if (isLogin) {
-      login(email, password);
+      const res = await loginAction(formData);
+
+      console.log("AuthModal - Login response:", res);
+
+      if (!res.ok) {
+        setError(res.error?.message || "Login failed");
+      } else {
+        // Reset form and close modal
+        setName("");
+        setUsername("");
+        setPassword("");
+        setConfirmPassword("");
+        onOpenChange(false);
+      }
     } else {
       if (password !== confirmPassword) {
         alert("Passwords do not match!");
         return;
       }
-      register(name, email, password);
+      register(name, username, password);
     }
-
-    // Reset form and close modal
-    setName("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    onOpenChange(false);
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setName("");
-    setEmail("");
+    setUsername("");
     setPassword("");
     setConfirmPassword("");
   };
@@ -86,15 +99,15 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           )}
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
+            <label htmlFor="username" className="text-sm font-medium">
+              Username
             </label>
             <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
@@ -127,6 +140,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                 required={!isLogin}
               />
             </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
           <Button type="submit" className="w-full mt-2">

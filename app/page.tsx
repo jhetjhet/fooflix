@@ -5,9 +5,11 @@ import {
   tvShowToMediaItem,
   getTMDBDetails,
 } from "@/services/tmdb";
-import type { MediaItem, TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
+import type { MediaItem } from "@/types/tmdb";
 import { FlixMediaType, FlixMovie, FlixSeries } from "@/types/flix";
 import { fetchFlixItems, flixToMediaItem } from "@/services/flix";
+
+export const revalidate = 60;
 
 const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
   const data = await fetchFlixItems<FlixMovie | FlixSeries>("all", {
@@ -26,9 +28,9 @@ const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
   await Promise.all(tmdbDetailsRequests).then((results) => {
     results.forEach((result) => {
       if ("title" in result) {
-        mediaItems.push(movieToMediaItem(result as TMDBMovieDetails));
+        mediaItems.push(movieToMediaItem(result));
       } else if ("name" in result) {
-        mediaItems.push(tvShowToMediaItem(result as TMDBTVShowDetails));
+        mediaItems.push(tvShowToMediaItem(result));
       }
     });
   });

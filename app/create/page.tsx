@@ -24,15 +24,21 @@ import type {
   MediaType,
 } from "@/types/tmdb";
 import SearchResults from "./search-results";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, redirect, notFound } from "next/navigation";
 import useTMDBFlix from "@/hooks/use-tmdb-flix";
 import { unifiedMovie, unifiedSeries } from "@/services/unified";
 import { isFlixMovie, isFlixSeries } from "@/services/flix";
 import FlixFormManager from "@/components/flix-form-manager";
+import { useAuthContext } from "@/context/authentication";
 
 export default function CreatePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuthContext();
+
+  if (!user?.can_create_flix) {
+    notFound();
+  }
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [searchType, setSearchType] = useState<MediaType>(

@@ -1,5 +1,6 @@
 import { MediaItem, MediaType } from "@/types/tmdb";
-import { FlixGenre, FlixMediaType, FlixMovie, FlixResponse, FlixSeries, FlixTypeMap } from "@/types/flix";
+import { FlixGenre, FlixMediaType, FlixMovie, FlixResponse, FlixSeries, FlixTypeMap, FlixUser, JWTResponse } from "@/types/flix";
+import zod from "zod";
 
 const FLIX_API_BASE = 'http://localhost:8000/api/';
 
@@ -116,4 +117,26 @@ export function isFlixMovie(item: FlixMovie | FlixSeries): item is FlixMovie {
 
 export function isFlixSeries(item: FlixMovie | FlixSeries): item is FlixSeries {
   return "seasons" in item;
+}
+
+export const FlixUserSchema = zod.object({
+  id: zod.string(),
+  email: zod.string().email(),
+  username: zod.string(),
+  can_create_flix: zod.boolean(),
+});
+
+export function isFlixUser(user: unknown): user is FlixUser {
+  return FlixUserSchema.safeParse(user).success;
+}
+
+export const JWTResponseSchema = zod.object({
+  refresh: zod.string(),
+  access: zod.string(),
+  access_expiration: zod.number(),
+  refresh_expiration: zod.number(),
+});
+
+export function isJWTResponse(data: unknown): data is JWTResponse {
+  return JWTResponseSchema.safeParse(data).success;
 }
