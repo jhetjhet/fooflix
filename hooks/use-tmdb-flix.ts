@@ -5,6 +5,7 @@ import { FlixTypeMap } from "@/types/flix";
 import useSWR from "swr";
 import { unifiedMovie, unifiedSeries } from "@/services/unified";
 import { UnifiedMovie, UnifiedSeries } from "@/types/unified";
+import { useMemo } from "react";
 
 const tmdbTypeMap = {
   movie: "movie",
@@ -47,10 +48,19 @@ export default function useTMDBFlix<T extends keyof FlixTypeMap>(
     ([, flixType, flixId]) => fetchFlixDetails({ type: flixType, id: flixId.toString() })
   );
 
-  const unified = !tmdb ? null
-    : isTVShowDetails(tmdb) ? unifiedSeries(tmdb, flix && isFlixSeries(flix) ? flix : null)
-    : isMovieDetails(tmdb) ? unifiedMovie(tmdb, flix && isFlixMovie(flix) ? flix : null)
-    : null;
+  const unified = useMemo(() => {
+    if (!tmdb) return null;
+
+    if (isTVShowDetails(tmdb)) {
+      return unifiedSeries(tmdb, flix && isFlixSeries(flix) ? flix : null);
+    }
+
+    if (isMovieDetails(tmdb)) {
+      return unifiedMovie(tmdb, flix && isFlixMovie(flix) ? flix : null);
+    }
+
+    return null;
+  }, [tmdb, flix]);
 
   return {
     tmdb: tmdb,
