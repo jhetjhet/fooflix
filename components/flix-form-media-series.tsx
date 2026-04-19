@@ -11,40 +11,37 @@ import {
 import useSWR from "swr";
 import { getTVSeasonDetails } from "@/services/tmdb";
 import { cn } from "@/lib/utils";
-import { UnifiedEpisode, UnifiedSeries } from "@/types/unified";
+import { UnifiedEpisode, UnifiedSeason, UnifiedSeries } from "@/types/unified";
 import { DEFAULT_UNIFIED_EPISODE } from "@/services/unified";
 
 interface FlixFormMediaSeriesProps {
   tv: UnifiedSeries;
-  seasonNumber: number | null;
+  selectedSeason: UnifiedSeason | null;
   selectedEpisode: UnifiedEpisode | null;
   setSelectedEpisode?: (episode: UnifiedEpisode | null) => void;
-  setSeasonNumber?: (season: number | null) => void;
+  setSelectedSeason?: (season: UnifiedSeason | null) => void;
 }
 
 export default function FlixFormMediaSeries({
   tv,
-  seasonNumber,
+  selectedSeason,
   selectedEpisode,
   setSelectedEpisode,
-  setSeasonNumber,
+  setSelectedSeason,
 }: FlixFormMediaSeriesProps) {
-
   const { data: seasonDetails, isLoading: loadingEpisodes } = useSWR(
-    seasonNumber ? [`tv`, tv.id, `season`, seasonNumber] : null,
-    ([, tvId, , season]) => getTVSeasonDetails(tvId, season),
+    selectedSeason?.season_number ? [`tv`, tv.id, `season`, selectedSeason?.season_number] : null,
+    ([, tvId, , seasonNumber]) => getTVSeasonDetails(tvId, seasonNumber),
   );
 
   const mappedUnifiedEpisodes = useMemo(() => {
-    const season = tv.seasons.find((s) => s.season_number === seasonNumber);
+    if (!selectedSeason) return {};
 
-    if (!season || !season.episodes) return {};
-
-    return season.episodes.reduce((acc, eps) => {
+    return selectedSeason.episodes.reduce((acc, eps) => {
       acc[eps.episode_number] = eps;
       return acc;
     }, {} as Record<number, UnifiedEpisode>);
-  }, [tv, seasonNumber]);
+  }, [tv, selectedSeason]);
 
   const unifiedEpisodes = useMemo<UnifiedEpisode[]>(() => {
     if (!seasonDetails?.episodes) return [];
@@ -55,8 +52,8 @@ export default function FlixFormMediaSeries({
     }));
   }, [seasonDetails, mappedUnifiedEpisodes]);
 
-  const handleSelectSeason = (seasonNumber: number) => {
-    setSeasonNumber?.(seasonNumber);
+  const handleSelectSeason = (selectedSeason: UnifiedSeason) => {
+    setSelectedSeason?.(selectedSeason);
     setSelectedEpisode?.(null);
   };
 
@@ -77,8 +74,14 @@ export default function FlixFormMediaSeries({
           {/* Season Selector */}
           <div className="flex items-center gap-3">
             <Select
-              value={seasonNumber?.toString() || ""}
-              onValueChange={(value) => handleSelectSeason(parseInt(value))}
+              value={selectedSeason?.season_number.toString() || ""}
+              onValueChange={(value) => {
+                const season = tv.seasons.find((s) => s.season_number.toString() === value);
+
+                if (season) {
+                  handleSelectSeason(season);
+                }
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a season" />
@@ -86,8 +89,11 @@ export default function FlixFormMediaSeries({
               <SelectContent>
                 {tv.seasons.map(
                   (season) => (
-                    <SelectItem key={season.season_number} value={season.season_number.toString()}>
-                      {season.name ? season.name : `Season ${season.season_number}`}
+                    <SelectItem 
+                      key={season.season_number} 
+                      value={season.season_number.toString()}
+                    >
+                      {season.flix_exists ? "✔️" : ""} {season.name ? season.name : `Season ${season.season_number}`}
                     </SelectItem>
                   ),
                 )}
@@ -95,8 +101,12 @@ export default function FlixFormMediaSeries({
             </Select>
           </div>
 
+          {/* {(selectedSeason !== null && !selectedSeason) && (
+            <p className="text-sm text-muted-foreground py-4 text-center">Season not found</p>
+          )} */}
+
           {/* Episodes List */}
-          {seasonNumber && (
+          {selectedSeason && (
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Episodes</h4>
               {loadingEpisodes ? (
@@ -128,7 +138,7 @@ export default function FlixFormMediaSeries({
                         E{episode.episode_number.toString().padStart(2, "0")}
                       </span>
                       <span className="flex-1 line-clamp-1">
-                        {episode.name}
+                        {episode?.flix_exists ? "✔️" : ""} {episode.name}
                       </span>
                     </button>
                   ))}

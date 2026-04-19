@@ -1,18 +1,19 @@
-import { isJWTResponse } from "@/services/flix";
-import { JWTResponse } from "@/types/flix";
+import { FlixUser, FlixUserSchema, JWTResponse, JWTResponseSchema } from "@/types/flix";
 import { cookies, headers } from "next/headers";
 
-export async function flixFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
+export async function flixFetch(endpoint: string, options: RequestInit = {}) {
   const allHeaders = await headers();
   const cookieStore = await cookies();
   const sessionValue = cookieStore.get("session")?.value;
   const sessionParse = sessionValue ? JSON.parse(sessionValue) : null;
 
-  if(!isJWTResponse(sessionParse)) {
+  const jwtResult = JWTResponseSchema.safeParse(sessionParse);
+
+  if(!jwtResult.success) {
     throw new Error("Invalid session data");
   }
 
-  const session: JWTResponse = sessionParse;
+  const session: JWTResponse = jwtResult.data;
 
   const respHeaders = new Headers(options.headers);
   const authToken = allHeaders.get("x-refreshed-token") || session?.access;
@@ -21,14 +22,32 @@ export async function flixFetch(endpoint: string, options: RequestInit = {}): Pr
     respHeaders.set("Authorization", `Bearer ${authToken}`);
   }
 
-  const response = await fetch(`${process.env.DJANGO_API_URL}${endpoint}`, {
+  return fetch(`${process.env.DJANGO_API_URL}${endpoint}`, {
     ...options,
-    headers: {
-      ...options.headers,
-      ...Object.fromEntries(respHeaders.entries()),
-    },
+    headers: respHeaders,
     cache: "no-store", // Ensure we don't cache API responses
   });
-
-  return response.json();
 }
+
+export async function fetchFlixUser(): Promise<FlixUser | null> {
+  try {
+    const response = await flixFetch("/auth/users/me/");
+
+    if (!response.ok) {
+      console.error(`Failed to fetch user: ${response.status}`);
+      return null;
+    }
+
+    const userResult = FlixUserSchema.safeParse(await response.json());
+
+    if (!userResult.success) {
+      console.error("Invalid user data:", userResult.error);
+      return null;
+    }
+    
+    return userResult.data;
+  } catch (error: unknown) {
+    console.error(error);
+    return null;
+  }
+};
