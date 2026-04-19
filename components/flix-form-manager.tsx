@@ -2,14 +2,27 @@ import { TMDBMovie, TMDBTVShow } from "@/types/tmdb";
 import FlixFormMediaBase from "./flix-form-media-base";
 import { isTVShow } from "@/services/tmdb";
 import useTMDBFlix from "@/hooks/use-tmdb-flix";
-import { isUnifiedMovie, isUnifiedSeries } from "@/services/unified";
-import { createContext, useContext, useEffect, useState } from "react";
-import { UnifiedEpisode, UnifiedMovie } from "@/types/unified";
+import {
+  isUnifiedSeries,
+} from "@/services/unified";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
+import {
+  UnifiedEpisode,
+  UnifiedSeason,
+} from "@/types/unified";
 import FlixFormMediaSeries from "./flix-form-media-series";
 import { UploadForm } from "./upload-form";
+import { Button } from "./ui/button";
+import useFormActions from "@/hooks/use-form-actions";
+import useUnifiedMedia from "@/hooks/use-unified-media";
 
 interface FlixManagerContextValue {
-
   selectedSeason: number | null;
   setSelectedSeason: (season: number | null) => void;
   selectedEpisode: UnifiedEpisode | null;
@@ -26,55 +39,146 @@ interface FlixFormManagerProps {
   tmdbMedia: TMDBMovie | TMDBTVShow;
 }
 
-export default function FlixFormManager({ 
-  tmdbMedia,
-}: FlixFormManagerProps) {
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  const [selectedEpisode, setSelectedEpisode] = useState<UnifiedEpisode | null>(null);
+export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
+  const [isRegisterPending, startRegisterTransition] = useTransition();
+
+  const { registerMovie, registerEpisode } = useFormActions();
+
+  const [selectedSeason, setSelectedSeason] = useState<UnifiedSeason | null>(
+    null,
+  );
+  const [selectedEpisode, setSelectedEpisode] = useState<UnifiedEpisode | null>(
+    null,
+  );
 
   const isTV = isTVShow(tmdbMedia);
 
-  const { unified, mutateFlix } = useTMDBFlix(isTV ? "series" : "movie", tmdbMedia.id);
- 
-  const [unifiedMedia, setUnifiedMedia] = useState<UnifiedMovie | UnifiedEpisode | null>(null);
+  const { tmdb, flix, type } = useTMDBFlix(
+    isTV ? "series" : "movie",
+    tmdbMedia.id,
+  );
+
+  const {
+    uMovie,
+    uSeries,
+    createUnifiedMovie,
+    createUnifiedSeries,
+    updateUnifiedMovie,
+    updateUnifiedSeries,
+    updateUnifiedSeason,
+    addOrUpdateUnifiedEpisode,
+  } = useUnifiedMedia();
 
   useEffect(() => {
     setSelectedSeason(null);
     setSelectedEpisode(null);
-  }, [tmdbMedia]);
+  }, [tmdbMedia.id]);
 
   useEffect(() => {
-    if (selectedEpisode) {
-      setUnifiedMedia(selectedEpisode);
-    }
-    else if (unified && isUnifiedMovie(unified)) {
-      setUnifiedMedia(unified);
-    }
-  }, [unified, selectedEpisode]);
+    if (!tmdb) return;
 
-  if (!unified) {
+    if (type === "series") {
+      createUnifiedSeries(tmdb, flix);
+    } else {
+      createUnifiedMovie(tmdb, flix);
+    }
+  }, [tmdb, flix, type]);
+
+  const unifiedBase = uMovie || uSeries;
+  const unifiedMedia = uMovie || selectedEpisode;
+
+  const isMediaRegistered = Boolean(uMovie?.flix_id) || selectedEpisode?.flix_exists;
+  const isUnifiedEpisode = unifiedMedia && "episode_number" in unifiedMedia;
+
+  useEffect(() => {
+    if (!uSeries) {
+      return;
+    }
+
+    if (selectedEpisode) {
+      const matchEpisode = uSeries.seasons
+        .find((season) => season.season_number === selectedEpisode.season_number)
+        ?.episodes.find((ep) => ep.episode_number === selectedEpisode.episode_number);
+
+      setSelectedEpisode(matchEpisode ?? null);
+    }
+
+    if (selectedSeason) {
+      const matchSeason = uSeries.seasons.find((season) => season.season_number === selectedSeason.season_number);
+  
+      setSelectedSeason(matchSeason ?? null);
+    }
+  }, [uSeries]);
+
+  if (!unifiedBase) {
     return null;
   }
-
-  const isUnifiedEpisode = (unifiedMedia && "episode_number" in unifiedMedia);
 
   return (
     <div className="space-y-6">
       {/* Media info */}
-      <FlixFormMediaBase unifiedMedia={unified} />
+      <FlixFormMediaBase unifiedMedia={unifiedBase} />
 
-      {(unified && isUnifiedSeries(unified)) && (
+      {uSeries && isUnifiedSeries(uSeries) && (
         <FlixFormMediaSeries
-          tv={unified}
-          seasonNumber={selectedSeason}
-          setSeasonNumber={setSelectedSeason}
+          tv={uSeries}
+          selectedSeason={selectedSeason}
+          setSelectedSeason={setSelectedSeason}
           selectedEpisode={selectedEpisode}
           setSelectedEpisode={setSelectedEpisode}
         />
       )}
 
-      {unifiedMedia && (
-        <UploadForm 
+      {!isMediaRegistered && unifiedMedia && (
+        <Button
+          className="w-full"
+          disabled={isRegisterPending}
+          onClick={() => {
+            if (isUnifiedEpisode && uSeries) {
+              startRegisterTransition(async () => {
+                const [
+                  newEpisode,
+                  newSeason,
+                  updatedSeries,
+                ] = await registerEpisode(unifiedMedia, uSeries);
+
+                if (updatedSeries) {
+                  updateUnifiedSeries(updatedSeries);
+                }
+
+                if (newSeason) {
+                  updateUnifiedSeason(newSeason);
+                }
+
+                if (newEpisode && selectedEpisode) {
+                  addOrUpdateUnifiedEpisode({
+                    ...unifiedMedia,
+                    ...newEpisode,
+                    flix_exists: true,
+                  });
+                }
+              });
+            } else if (uMovie) {
+              startRegisterTransition(async () => {
+                const newMovie = await registerMovie(uMovie);
+
+                if (newMovie) {
+                  updateUnifiedMovie(newMovie);
+                }
+              });
+            }
+          }}
+        >
+          {isRegisterPending
+            ? "Registering..."
+            : isUnifiedEpisode
+            ? "Register Episode"
+            : "Register Movie"}
+        </Button>
+      )}
+
+      {unifiedMedia && isMediaRegistered && (
+        <UploadForm
           title={isUnifiedEpisode ? unifiedMedia.name : unifiedMedia.title}
         />
       )}

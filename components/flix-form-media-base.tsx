@@ -7,11 +7,13 @@ interface FlixFormMediaBaseProps {
   unifiedMedia: UnifiedMovie | UnifiedSeries;
 }
 
-export default function FlixFormMediaBase({ unifiedMedia }: FlixFormMediaBaseProps) {
+export default function FlixFormMediaBase({
+  unifiedMedia,
+}: FlixFormMediaBaseProps) {
   const isTV = isUnifiedSeries(unifiedMedia);
 
   return (
-    <div className="p-4 rounded-lg bg-card border border-border">
+    <div className="relative p-4 rounded-lg bg-card border border-border">
       <div className="flex items-start gap-4">
         <div className="w-20 h-28 rounded overflow-hidden bg-muted shrink-0">
           <img
@@ -39,10 +41,14 @@ export default function FlixFormMediaBase({ unifiedMedia }: FlixFormMediaBasePro
                 {unifiedMedia.vote_average.toFixed(1)}
               </span>
             )}
-            {(isTV ? unifiedMedia.first_air_date : unifiedMedia.release_date) && (
+            {(isTV
+              ? unifiedMedia.first_air_date
+              : unifiedMedia.release_date) && (
               <span>
                 {new Date(
-                  isTV ? unifiedMedia.first_air_date : unifiedMedia.release_date,
+                  isTV
+                    ? unifiedMedia.first_air_date
+                    : unifiedMedia.release_date,
                 ).getFullYear()}
               </span>
             )}

@@ -1,20 +1,28 @@
+import { resFail } from "@/lib/response-wrappers";
 import { flixFetch } from "@/lib/flix-fetch";
-import { isFlixUser } from "@/services/flix";
 import { FetchResponse } from "@/types";
-import { FlixUser } from "@/types/flix";
+import { FlixUser, FlixUserSchema } from "@/types/flix";
 import { NextResponse } from "next/server";
 
 export async function GET(): Promise<NextResponse<FetchResponse<FlixUser>>> {
   try {
-    const user = await flixFetch("/auth/users/me/");
+    const response = await flixFetch("/auth/users/me/");
 
-    if (!isFlixUser(user)) {
+    if (!response.ok) {
       return NextResponse.json({ 
         ok: false,
         data: null,
-        error: { message: "Invalid user data" },
+        error: { message: "Failed to fetch user" },
       }, { status: 500 });
     }
+
+    const userResult = FlixUserSchema.safeParse(await response.json());
+
+    if (!userResult.success) {
+      return NextResponse.json(resFail({ message: "Invalid user data" }), { status: 500 });
+    }
+
+    const user = userResult.data;
 
     return NextResponse.json({ 
       ok: true,
@@ -24,10 +32,6 @@ export async function GET(): Promise<NextResponse<FetchResponse<FlixUser>>> {
   } catch (error: unknown) {
     console.error(error);
 
-    return NextResponse.json({ 
-      ok: false,
-      data: null,
-      error: { message: "Internal Server Error" },
-    }, { status: 500 });
+    return NextResponse.json(resFail({ message: "Internal Server Error" }), { status: 500 });
   }
 }

@@ -1,31 +1,38 @@
-import { fetchFlixDetails, isFlixMovie, isFlixSeries } from "@/services/flix";
-import { getTMDBDetails, isMovieDetails, isTVShowDetails } from "@/services/tmdb";
+import { fetchFlixDetails } from "@/services/flix";
+import { getTMDBDetails } from "@/services/tmdb";
 import { TMDBTypeMap } from "@/types/tmdb";
-import { FlixTypeMap } from "@/types/flix";
+import { FlixMediaType, FlixMovieSchema, FlixSeriesSchema } from "@/types/flix";
 import useSWR from "swr";
 import { unifiedMovie, unifiedSeries } from "@/services/unified";
-import { UnifiedMovie, UnifiedSeries } from "@/types/unified";
+import { useMemo } from "react";
 
 const tmdbTypeMap = {
   movie: "movie",
   series: "tv",
 } as const;
 
-type TMDBKeyFor<T extends keyof FlixTypeMap> = (typeof tmdbTypeMap)[T];
+type TMDBFlixData =
+  | {
+      type: "movie";
+      tmdb: TMDBTypeMap["movie"] | undefined;
+      flix: ReturnType<typeof FlixMovieSchema.parse> | undefined;
+      isLoading: boolean;
+      error: Error | null;
+      mutateFlix: () => void;
+    }
+  | {
+      type: "series";
+      tmdb: TMDBTypeMap["tv"] | undefined;
+      flix: ReturnType<typeof FlixSeriesSchema.parse> | undefined;
+      isLoading: boolean;
+      error: Error | null;
+      mutateFlix: () => void;
+    };
 
-interface TMDBFlixData<T extends keyof FlixTypeMap> {
-  tmdb: TMDBTypeMap[TMDBKeyFor<T>] | undefined;
-  flix: FlixTypeMap[T] | undefined;
-  unified: UnifiedMovie | UnifiedSeries | null | undefined;
-  isLoading: boolean;
-  error: Error | null;
-  mutateFlix: () => void;
-}
-
-export default function useTMDBFlix<T extends keyof FlixTypeMap>(
-  type: T,
+export default function useTMDBFlix(
+  type: Exclude<FlixMediaType, "all">,
   id: number | null,
-): TMDBFlixData<T> {
+): TMDBFlixData {
   const tmdbType = tmdbTypeMap[type];
 
   const {
@@ -33,31 +40,75 @@ export default function useTMDBFlix<T extends keyof FlixTypeMap>(
     isLoading: tmdbLoading,
     error: tmdbError,
   } = useSWR(
-    id ? ['tmdb', tmdbType, id] : null,
-    ([, tmdbType, tmdbId]) => getTMDBDetails({ type: tmdbType, id: tmdbId })
-  )
+    id ? ["tmdb", tmdbType, id] : null,
+    ([, tmdbType, tmdbId]) => getTMDBDetails({ type: tmdbType, id: tmdbId }),
+    {
+      errorRetryCount: 2,
+      errorRetryInterval: 3000,
+    },
+  );
 
   const {
-    data: flix,
+    data: flixRaw,
     isLoading: flixLoading,
     error: flixError,
     mutate: mutateFlix,
   } = useSWR(
-    id ? ['flix', type, id] : null,
-    ([, flixType, flixId]) => fetchFlixDetails({ type: flixType, id: flixId.toString() })
+    id ? ["flix", type, id] : null,
+    ([, flixType, flixId]) =>
+      fetchFlixDetails({
+        type: flixType,
+        id: flixId.toString(),
+      }),
+    {
+      errorRetryCount: 2,
+      errorRetryInterval: 3000,
+    },
   );
 
-  const unified = !tmdb ? null
-    : isTVShowDetails(tmdb) ? unifiedSeries(tmdb, flix && isFlixSeries(flix) ? flix : null)
-    : isMovieDetails(tmdb) ? unifiedMovie(tmdb, flix && isFlixMovie(flix) ? flix : null)
-    : null;
+  const flixSeries = useMemo(() => {
+    if (type !== "series" || !flixRaw) return undefined;
 
-  return {
-    tmdb: tmdb,
-    flix: flix,
-    unified: unified,
+    const res = FlixSeriesSchema.safeParse(flixRaw);
+    return res.success ? res.data : undefined;
+  }, [flixRaw, type]);
+
+  const flixMovie = useMemo(() => {
+    if (type !== "movie" || !flixRaw) return undefined;
+
+    const res = FlixMovieSchema.safeParse(flixRaw);
+    return res.success ? res.data : undefined;
+  }, [flixRaw, type]);
+
+  const unified = useMemo(() => {
+    if (!tmdb) return null;
+
+    if (type === "series") {
+      return unifiedSeries(tmdb as TMDBTypeMap["tv"], flixSeries ?? null);
+    }
+
+    return unifiedMovie(tmdb as TMDBTypeMap["movie"], flixMovie ?? null);
+  }, [tmdb, flixMovie, flixSeries, type]);
+
+  const base = {
     isLoading: tmdbLoading || flixLoading,
     error: tmdbError || flixError,
     mutateFlix,
+  };
+
+  if (type === "series") {
+    return {
+      type: "series",
+      tmdb: tmdb as TMDBTypeMap["tv"] | undefined,
+      flix: flixSeries as ReturnType<typeof FlixSeriesSchema.parse> | undefined,
+      ...base,
+    };
+  }
+
+  return {
+    type: "movie",
+    tmdb: tmdb as TMDBTypeMap["movie"] | undefined,
+    flix: flixMovie as ReturnType<typeof FlixMovieSchema.parse> | undefined,
+    ...base,
   };
 }

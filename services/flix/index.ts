@@ -1,8 +1,16 @@
 import { MediaItem, MediaType } from "@/types/tmdb";
-import { FlixGenre, FlixMediaType, FlixMovie, FlixResponse, FlixSeries, FlixTypeMap, FlixUser, FlixUserRegister, JWTResponse } from "@/types/flix";
-import zod from "zod";
+import {
+  FlixGenre,
+  FlixMediaType,
+  FlixMovie,
+  FlixResponse,
+  FlixSeries,
+  FlixTypeMap,
+  FlixUserRegister,
+  JWTResponse,
+} from "@/types/flix";
 
-const FLIX_API_BASE = 'http://localhost:8000/api/';
+const FLIX_API_BASE = "http://localhost:8000/api/";
 
 export const DEFAULT_FLIX_MOVIE: FlixMovie = {
   type: "movie",
@@ -56,9 +64,9 @@ export async function fetchFlixDetails<T extends keyof FlixTypeMap>({
   id,
   params = {},
 }: {
-  type: T,
-  id: string,
-  params?: Record<string, string>,
+  type: T;
+  id: string;
+  params?: Record<string, string>;
 }): Promise<FlixTypeMap[T]> {
   const searchParams = new URLSearchParams({
     ...params,
@@ -85,7 +93,7 @@ export function flixToMediaItem(flix: FlixMovie | FlixSeries): MediaItem {
   if (flixIsSeries(flix)) {
     mediaType = "tv";
   }
-  
+
   return {
     id: parseInt(flix.tmdb_id),
     title: flix.title,
@@ -96,7 +104,7 @@ export function flixToMediaItem(flix: FlixMovie | FlixSeries): MediaItem {
     voteAverage: 0,
     mediaType: mediaType,
     genreIds: genreIds,
-  }
+  };
 }
 
 export async function fetchFlixGenres(): Promise<FlixGenre[]> {
@@ -109,44 +117,4 @@ export async function fetchFlixGenres(): Promise<FlixGenre[]> {
   }
 
   return response.json() || [];
-}
-
-export function isFlixMovie(item: FlixMovie | FlixSeries): item is FlixMovie {
-  return !("seasons" in item);
-}
-
-export function isFlixSeries(item: FlixMovie | FlixSeries): item is FlixSeries {
-  return "seasons" in item;
-}
-
-export const FlixUserSchema = zod.object({
-  id: zod.string(),
-  email: zod.string().email(),
-  username: zod.string(),
-  can_create_flix: zod.boolean(),
-});
-
-export function isFlixUser(user: unknown): user is FlixUser {
-  return FlixUserSchema.safeParse(user).success;
-}
-
-export const JWTResponseSchema = zod.object({
-  refresh: zod.string(),
-  access: zod.string(),
-  access_expiration: zod.number(),
-  refresh_expiration: zod.number(),
-});
-
-export function isJWTResponse(data: unknown): data is JWTResponse {
-  return JWTResponseSchema.safeParse(data).success;
-}
-
-export const FlixUserRegisterSchema = zod.object({
-  username: zod.string(),
-  email: zod.string().email(),
-  password: zod.string().min(6),
-});
-
-export function isFlixUserRegister(data: unknown): data is FlixUserRegister {
-  return FlixUserRegisterSchema.safeParse(data).success;
 }

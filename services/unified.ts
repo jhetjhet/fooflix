@@ -57,7 +57,7 @@ function mapEpisode(flixEp: FlixEpisode): UnifiedEpisode {
     air_date: "",
     vote_average: 0,
     runtime: 0,
-    flix_exists: false,
+    flix_exists: true,
   };
 }
 
@@ -75,13 +75,13 @@ function mapSeason(
     air_date: tmdbSeason.air_date,
     // Flix episodes take priority
     episodes: (flixSeason.episodes ?? []).map(mapEpisode),
-    flix_exists: true,
+    flix_exists: !!flixSeason?.tmdb_id,
   };
 }
 
 export function unifiedMovie(
   tmdb: TMDBMovieDetails,
-  flix: FlixMovie | null,
+  flix: FlixMovie | null | undefined,
 ): UnifiedMovie {
   const { id, extension, has_video, video_path, video_url, subtitles } = flix || DEFAULT_FLIX_MOVIE;
 
@@ -98,7 +98,7 @@ export function unifiedMovie(
 
 export function unifiedSeries(
   tmdb: TMDBTVShowDetails,
-  flix: FlixSeries | null,
+  flix: FlixSeries | null | undefined,
 ): UnifiedSeries {
   const flixSeasonMap = new Map<number, FlixSeason>(
     (flix?.seasons ?? []).map((s) => [s.season_number, s]),
@@ -122,7 +122,14 @@ export function isUnifiedMovie(item: UnifiedMovie | UnifiedSeries): item is Unif
   return "runtime" in item;
 }
 
+export function isUnifiedEpisode(item: UnifiedEpisode | null): item is UnifiedEpisode {
+  return item !== null && "episode_number" in item && "season_number" in item;
+}
+
 export function isUnifiedSeries(item: UnifiedMovie | UnifiedSeries): item is UnifiedSeries {
   return "number_of_seasons" in item;
 }
 
+export function isUnifiedMediaRegistered(unified: UnifiedMovie | UnifiedSeries): boolean {
+  return !!unified.flix_id;
+}
