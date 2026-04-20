@@ -67,6 +67,8 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
     updateUnifiedSeries,
     updateUnifiedSeason,
     addOrUpdateUnifiedEpisode,
+    patchUnifiedEpisode,
+    patchUnifiedMovie,
   } = useUnifiedMedia();
 
   useEffect(() => {
@@ -180,6 +182,23 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
       {unifiedMedia && isMediaRegistered && (
         <UploadForm
           title={isUnifiedEpisode ? unifiedMedia.name : unifiedMedia.title}
+          mediaData={uMovie || selectedEpisode}
+          tmdbId={unifiedBase.id.toString()}
+          episodeNumber={selectedEpisode?.episode_number}
+          seasonNumber={selectedEpisode?.season_number}
+          onVideoUploadFinish={() => {
+            if (isUnifiedEpisode && selectedEpisode) {
+              patchUnifiedEpisode({
+                has_video: true,
+                season: selectedEpisode.season_number,
+                episode_number: selectedEpisode.episode_number,
+              });
+            } else if (uMovie) {
+              patchUnifiedMovie({
+                has_video: true,
+              });
+            }
+          }}
         />
       )}
     </div>

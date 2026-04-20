@@ -145,6 +145,52 @@ export default function useUnifiedMedia() {
     });
   }
 
+  const patchUnifiedMovie = (flix: Partial<FlixMovie>) => {
+    setUMovie((prev) => {
+      if (!prev) return null;
+
+      return {
+        ...prev,
+        has_video: flix.has_video ?? prev.has_video,
+        extension: flix.extension ?? prev.extension,
+        video_path: flix.video_path ?? prev.video_path,
+        video_url: flix.video_url ?? prev.video_url,
+        subtitles: flix.subtitles ?? prev.subtitles,
+      };
+    });
+  }
+
+  const patchUnifiedEpisode = (flix: Partial<FlixEpisode> & Pick<FlixEpisode, "season" | "episode_number">) => {
+    setUSeries((prev) => {
+      if (!prev) return null;
+
+      const updatedSeasons = prev.seasons.map((season) => {
+        if (season.season_number === flix.season) {
+          const updatedEpisodes = season.episodes.map((episode) => {
+            if (episode.episode_number === flix.episode_number) {
+              return {
+                ...episode,
+                ...flix,
+              };
+            }
+            return episode;
+          });
+
+          return {
+            ...season,
+            episodes: updatedEpisodes,
+          };
+        }
+        return season;
+      });
+
+      return {
+        ...prev,
+        seasons: updatedSeasons,
+      };
+    });
+  }
+
   const controls = {
     createUnifiedMovie,
     createUnifiedSeries,
@@ -153,6 +199,8 @@ export default function useUnifiedMedia() {
     updateUnifiedSeason,
     updateUnifiedEpisode,
     addOrUpdateUnifiedEpisode,
+    patchUnifiedMovie,
+    patchUnifiedEpisode,
   };
   
   if (uMovie) {

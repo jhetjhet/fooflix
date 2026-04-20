@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Upload, Plus, Trash2, X, Play, Pause, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -15,15 +16,58 @@ import {
 import { subtitleLanguages } from "@/lib/mock-data";
 import type { Subtitle } from "@/types/tmdb";
 import { cn } from "@/lib/utils";
+import FileUploader from "@/components/media-uploader";
+import { FlixMedia } from "@/types/flix";
+
+type UploaderState = {
+  bytesUploaded: number | null;
+  pause: boolean;
+  percentProgress: number;
+  isInitializing: boolean;
+  setPause: React.Dispatch<React.SetStateAction<boolean>>;
+  cancelUpload: () => void;
+};
+
+// ─── Existing Video ─────────────────────────────────────────────────────────
+
+interface ExistingVideoProps {
+  videoPath: string;
+  onReplace: () => void;
+}
+
+function ExistingVideo({ videoPath, onReplace }: ExistingVideoProps) {
+  const filename = videoPath.split("/").pop() || videoPath;
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">Video File</label>
+      <div className="flex items-center gap-3 p-4 border rounded-lg bg-primary/5 border-primary/30">
+        <div className="flex items-center justify-center size-10 rounded-md bg-primary/10 shrink-0">
+          <Film className="size-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{filename}</p>
+          <p className="text-xs text-muted-foreground">Video already uploaded</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onReplace} className="shrink-0">
+          Replace
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 // ─── Video Upload ────────────────────────────────────────────────────────────
 
 interface VideoUploadProps {
   file: File | null;
   onChange: (file: File) => void;
+  uploaderState: UploaderState | null;
+  onStartPause: () => void;
 }
 
-function VideoUpload({ file, onChange }: VideoUploadProps) {
+function VideoUpload({ file, onChange, uploaderState, onStartPause }: VideoUploadProps) {
+  const isUploading = !!uploaderState && !uploaderState.pause && uploaderState.bytesUploaded !== null;
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Video File</label>
@@ -31,8 +75,9 @@ function VideoUpload({ file, onChange }: VideoUploadProps) {
         <input
           type="file"
           accept="video/*"
+          disabled={isUploading}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) onChange(f); }}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
         />
         <div
           className={cn(
@@ -62,6 +107,46 @@ function VideoUpload({ file, onChange }: VideoUploadProps) {
           </div>
         </div>
       </div>
+
+      {file && uploaderState && (
+        <div className="flex items-center gap-3 pt-1">
+          <Progress value={uploaderState.percentProgress} className="flex-1" />
+          <span className="text-xs tabular-nums text-muted-foreground w-9 shrink-0 text-right">
+            {uploaderState.percentProgress}%
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1.5 shrink-0"
+            disabled={uploaderState.isInitializing}
+            onClick={onStartPause}
+          >
+            {uploaderState.pause ? (
+              <>
+                <Play className="size-3.5" />
+                Start
+              </>
+            ) : (
+              <>
+                <Pause className="size-3.5" />
+                Pause
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            className="gap-1.5 shrink-0"
+            disabled={uploaderState.isInitializing}
+            onClick={uploaderState.cancelUpload}
+          >
+            <Trash2 className="size-3.5" />
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -184,44 +269,34 @@ function SubtitleSection({ subtitles, onAdd, onUpdate, onSetDefault, onRemove }:
   );
 }
 
-// ─── Form Actions ────────────────────────────────────────────────────────────
-
-interface FormActionsProps {
-  onSubmit: (action: "register" | "update" | "delete") => void;
-}
-
-function FormActions({ onSubmit }: FormActionsProps) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border">
-      <Button onClick={() => onSubmit("register")} className="gap-2">
-        Register Content
-      </Button>
-      <Button variant="outline" onClick={() => onSubmit("update")}>
-        Update Content
-      </Button>
-      <Button
-        variant="destructive"
-        onClick={() => onSubmit("delete")}
-        className="ml-auto"
-      >
-        Delete Content
-      </Button>
-    </div>
-  );
-}
-
 // ─── Upload Form ─────────────────────────────────────────────────────────────
 
 interface UploadFormProps {
   title: string;
+  mediaData: FlixMedia | null;
   subtitle?: string;
-  onClose?: () => void;
+  tmdbId?: string;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
   className?: string;
+  onClose?: () => void;
+  onVideoUploadFinish?: () => void;
 }
 
-export function UploadForm({ title, subtitle, onClose, className }: UploadFormProps) {
+export function UploadForm({
+  title,
+  mediaData,
+  subtitle,
+  tmdbId = "",
+  seasonNumber = null,
+  episodeNumber = null,
+  className,
+  onClose,
+  onVideoUploadFinish,
+}: UploadFormProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+  const [showUpload, setShowUpload] = useState(() => !mediaData?.has_video);
 
   const addSubtitle = () => {
     setSubtitles((prev) => [
@@ -242,16 +317,14 @@ export function UploadForm({ title, subtitle, onClose, className }: UploadFormPr
     setSubtitles((prev) => prev.map((s) => ({ ...s, isDefault: s.id === id })));
   };
 
-  const handleSubmit = (action: "register" | "update" | "delete") => {
-    const actionText = action === "register" ? "Register" : action === "update" ? "Update" : "Delete";
-    alert(
-      `Mock ${actionText}:\n\n` +
-        `Title: ${title}\n` +
-        `Video: ${videoFile?.name || "No video selected"}\n` +
-        `Subtitles: ${subtitles.length} track(s)\n\n` +
-        `This would ${action} the content in the database.`,
-    );
-  };
+  useEffect(() => {
+    setShowUpload(!mediaData?.has_video);
+  }, [mediaData]);
+
+  useEffect(() => {
+    setVideoFile(null);
+    setSubtitles([]);
+  }, [tmdbId, seasonNumber, episodeNumber]);
 
   return (
     <div className={cn("p-6 rounded-lg bg-card border border-border", className)}>
@@ -269,7 +342,31 @@ export function UploadForm({ title, subtitle, onClose, className }: UploadFormPr
       </div>
 
       <div className="space-y-6">
-        <VideoUpload file={videoFile} onChange={setVideoFile} />
+        {!showUpload && mediaData?.has_video ? (
+          <ExistingVideo
+            videoPath={mediaData.video_path}
+            onReplace={() => setShowUpload(true)}
+          />
+        ) : (
+          <FileUploader
+            _file={videoFile}
+            tmdbId={tmdbId}
+            seasonNumber={seasonNumber}
+            episodeNumber={episodeNumber}
+            basePath={process.env.NEXT_PUBLIC_NODE_ENDPOINT}
+            onFinish={() => onVideoUploadFinish?.()}
+          >
+            {(uploaderState: UploaderState) => (
+              <VideoUpload
+                key={tmdbId + seasonNumber + episodeNumber} // reset state when media changes
+                file={videoFile}
+                onChange={setVideoFile}
+                uploaderState={videoFile ? uploaderState : null}
+                onStartPause={() => uploaderState.setPause((p: boolean) => !p)}
+              />
+            )}
+          </FileUploader>
+        )}
         <SubtitleSection
           subtitles={subtitles}
           onAdd={addSubtitle}
@@ -277,7 +374,6 @@ export function UploadForm({ title, subtitle, onClose, className }: UploadFormPr
           onSetDefault={setDefaultSubtitle}
           onRemove={removeSubtitle}
         />
-        <FormActions onSubmit={handleSubmit} />
       </div>
     </div>
   );
