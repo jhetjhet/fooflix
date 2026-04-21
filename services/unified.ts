@@ -122,7 +122,7 @@ export function isUnifiedMovie(item: UnifiedMovie | UnifiedSeries): item is Unif
   return "runtime" in item;
 }
 
-export function isUnifiedEpisode(item: UnifiedEpisode | null): item is UnifiedEpisode {
+export function isUnifiedEpisode(item: UnifiedMovie | UnifiedEpisode | null): item is UnifiedEpisode {
   return item !== null && "episode_number" in item && "season_number" in item;
 }
 

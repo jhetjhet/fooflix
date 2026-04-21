@@ -4,8 +4,9 @@ export const FlixSubtitleSchema = zod.object({
   id: zod.number(),
   name: zod.string(),
   is_default: zod.boolean().default(false),
-  language_code: zod.string().default("en"),
-  url: zod.string(),
+  srclng: zod.string().default("en"),
+  subtitle: zod.string(),
+  subtitle_exists: zod.boolean().default(false),
 });
 
 export const FlixMediaSchema = zod.object({
@@ -106,6 +107,14 @@ export const JWTResponseSchema = zod.object({
   refresh_expiration: zod.number(), // Unix timestamp in seconds
 });
 
+export const FlixSubtitleFormSchema = zod.object({
+  id: zod.string(),
+  subtitle: zod.union([zod.instanceof(File), zod.string()]).optional(),
+  name: zod.string(),
+  is_default: zod.boolean().default(false),
+  srclng: zod.string().default("en"),
+});
+
 export interface FlixResponse<T> {
   number: number;
   results: T[];
@@ -159,3 +168,5 @@ export type FlixMediaForm = z.infer<typeof FlixMediaFormSchema>;
 export type FlixEpisodeForm = z.infer<typeof FlixEpisodeFormSchema>;
 
 export type FlixSeasonForm = z.infer<typeof FlixSeasonFormSchema>;
+
+export type FlixSubtitleForm = z.infer<typeof FlixSubtitleFormSchema>;

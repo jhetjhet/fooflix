@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { Navbar } from "@/components/navbar";
 import { AuthProvider } from "@/context/authentication";
 import { fetchFlixUser } from "@/lib/flix-fetch";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -44,6 +45,7 @@ export default async function RootLayout({
       >
         <AuthProvider initialUser={user}>
           <Navbar />
+          <Toaster />
           <main>{children}</main>
         </AuthProvider>
       </body>
