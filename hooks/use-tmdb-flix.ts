@@ -43,6 +43,7 @@ export default function useTMDBFlix(
     id ? ["tmdb", tmdbType, id] : null,
     ([, tmdbType, tmdbId]) => getTMDBDetails({ type: tmdbType, id: tmdbId }),
     {
+      revalidateOnFocus: false,
       errorRetryCount: 2,
       errorRetryInterval: 3000,
     },
@@ -61,6 +62,7 @@ export default function useTMDBFlix(
         id: flixId.toString(),
       }),
     {
+      revalidateOnFocus: false,
       errorRetryCount: 2,
       errorRetryInterval: 3000,
     },
@@ -79,16 +81,6 @@ export default function useTMDBFlix(
     const res = FlixMovieSchema.safeParse(flixRaw);
     return res.success ? res.data : undefined;
   }, [flixRaw, type]);
-
-  const unified = useMemo(() => {
-    if (!tmdb) return null;
-
-    if (type === "series") {
-      return unifiedSeries(tmdb as TMDBTypeMap["tv"], flixSeries ?? null);
-    }
-
-    return unifiedMovie(tmdb as TMDBTypeMap["movie"], flixMovie ?? null);
-  }, [tmdb, flixMovie, flixSeries, type]);
 
   const base = {
     isLoading: tmdbLoading || flixLoading,

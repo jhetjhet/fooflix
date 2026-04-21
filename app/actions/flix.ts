@@ -13,6 +13,10 @@ import {
   FlixSeasonForm,
   FlixSeasonFormSchema,
   FlixSeasonSchema,
+  FlixSubtitle,
+  FlixSubtitleForm,
+  FlixSubtitleFormSchema,
+  FlixSubtitleSchema,
 } from "@/types/flix";
 import zod from "zod";
 
@@ -137,5 +141,120 @@ export const createFlixEpisode = withErrorHandling(
     );
 
     return handleResponse(response, FlixEpisodeSchema);
+  },
+);
+
+export const uploadFlixSubtitle = withErrorHandling(
+  async (
+    tmdbId: string,
+    subtitleData: FlixSubtitleForm,
+    episodeNumber?: number | null,
+    seasonNumber?: number | null,
+  ): Promise<FetchResponse<FlixSubtitle>> => {
+    const subtitleFormResult = FlixSubtitleFormSchema.safeParse(subtitleData);
+
+    if (!subtitleFormResult.success) {
+      return resFail({
+        message: "Invalid subtitle data",
+        status: 400,
+      });
+    }
+
+    if (
+      (seasonNumber == null && episodeNumber != null) ||
+      (seasonNumber != null && episodeNumber == null)
+    ) {
+      return resFail({
+        message:
+          "Season and episode must either both be provided or both be null",
+        status: 400,
+      });
+    }
+
+    const formData = new FormData();
+    formData.append("name", subtitleData.name);
+    formData.append("srclng", subtitleData.srclng);
+    formData.append("is_default", subtitleData.is_default.toString());
+
+    if (subtitleData.subtitle instanceof File) {
+      formData.append("subtitle", subtitleData.subtitle);
+    }
+
+    let endpoint = `/api/movie/${tmdbId}/subtitles/`;
+
+    if (seasonNumber != null && episodeNumber != null) {
+      endpoint = `/api/series/${tmdbId}/season/${seasonNumber}/episode/${episodeNumber}/subtitles/`;
+    }
+
+    const response = await flixFetch(endpoint, {
+      method: "POST",
+      body: formData,
+    });
+
+    return handleResponse(response, FlixSubtitleSchema);
+  },
+);
+
+export const updateFlixSubtitle = withErrorHandling(
+  async (
+    tmdbId: string,
+    subtitleId: string,
+    subtitleData: FlixSubtitleForm,
+    episodeNumber?: number | null,
+    seasonNumber?: number | null,
+  ): Promise<FetchResponse<FlixSubtitle>> => {
+    const subtitleFormResult = FlixSubtitleFormSchema.safeParse(subtitleData);
+    
+    if (!subtitleFormResult.success) {
+      return resFail({
+        message: "Invalid subtitle data",
+        status: 400,
+      });
+    }
+
+    const formData = new FormData();
+    formData.append("name", subtitleData.name);
+    formData.append("srclng", subtitleData.srclng);
+    formData.append("is_default", subtitleData.is_default.toString());
+
+    if (subtitleData.subtitle instanceof File) {
+      formData.append("subtitle", subtitleData.subtitle);
+    }
+
+    let endpoint = `/api/movie/${tmdbId}/subtitles/${subtitleId}/`;
+
+    if (seasonNumber != null && episodeNumber != null) {
+      endpoint = `/api/series/${tmdbId}/season/${seasonNumber}/episode/${episodeNumber}/subtitles/${subtitleId}/`;
+    }
+
+    const response = await flixFetch(endpoint, {
+      method: "PATCH",
+      body: formData,
+    });
+
+    return handleResponse(response, FlixSubtitleSchema);
+  },
+);
+
+export const deleteFlixSubtitle = withErrorHandling(
+  async (tmdbId: string, subtitleId: string, episodeNumber?: number | null, seasonNumber?: number | null): Promise<FetchResponse<null>> => {
+    let endpoint = `/api/movie/${tmdbId}/subtitles/${subtitleId}/`;
+
+    if (seasonNumber != null && episodeNumber != null) {
+      endpoint = `/api/series/${tmdbId}/season/${seasonNumber}/episode/${episodeNumber}/subtitles/${subtitleId}/`;
+    }
+
+    const response = await flixFetch(endpoint, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      return resFail({
+        message: `Failed to delete subtitle with status ${response.status}`,
+        status: response.status,
+      });
+    }
+
+    return resOk(null, response.status);
   },
 );

@@ -35,9 +35,10 @@ interface VideoUploadProps {
   onChange: (file: File) => void;
   uploaderState: UploaderState | null;
   onStartPause: () => void;
+  onCancel?: () => void;
 }
 
-export default function VideoUpload({ file, onChange, uploaderState, onStartPause }: VideoUploadProps) {
+export default function VideoUpload({ file, onChange, uploaderState, onStartPause, onCancel }: VideoUploadProps) {
   const isUploading = !!uploaderState && !uploaderState.pause && uploaderState.bytesUploaded !== null;
 
   return (
@@ -79,6 +80,18 @@ export default function VideoUpload({ file, onChange, uploaderState, onStartPaus
           </div>
         </div>
       </div>
+
+      {onCancel && !uploaderState && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={onCancel}
+        >
+          Keep existing video
+        </Button>
+      )}
 
       {file && uploaderState && (
         <div className="flex items-center gap-3 pt-1">

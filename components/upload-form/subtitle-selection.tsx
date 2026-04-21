@@ -1,13 +1,18 @@
-import { Subtitle } from "@/types/tmdb";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 import SubtitleItem from "./subtitle-item";
+import { FlixSubtitleForm } from "@/types/flix";
+import ISO6391 from "iso-639-1";
 
+const LANGUAGE_OPTIONS = ISO6391.getAllCodes().map((code) => ({
+  value: code,
+  label: `${code} - ${ISO6391.getName(code)}`,
+}));
 
 interface SubtitleSectionProps {
-  subtitles: Subtitle[];
+  subtitles: FlixSubtitleForm[];
   onAdd: () => void;
-  onUpdate: (id: string, updates: Partial<Subtitle>) => void;
+  onUpdate: (id: string, updates: Partial<FlixSubtitleForm>) => void;
   onSetDefault: (id: string) => void;
   onRemove: (id: string) => void;
 }
@@ -36,6 +41,7 @@ export default function SubtitleSection({ subtitles, onAdd, onUpdate, onSetDefau
               onUpdate={onUpdate}
               onSetDefault={onSetDefault}
               onRemove={onRemove}
+              subtitleOptions={LANGUAGE_OPTIONS}
             />
           ))}
         </div>

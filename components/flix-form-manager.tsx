@@ -3,6 +3,7 @@ import FlixFormMediaBase from "./flix-form-media-base";
 import { isTVShow } from "@/services/tmdb";
 import useTMDBFlix from "@/hooks/use-tmdb-flix";
 import {
+  isUnifiedEpisode,
   isUnifiedSeries,
 } from "@/services/unified";
 import {
@@ -21,6 +22,7 @@ import { UploadForm } from "./upload-form";
 import { Button } from "./ui/button";
 import useFormActions from "@/hooks/use-form-actions";
 import useUnifiedMedia from "@/hooks/use-unified-media";
+import { FlixSubtitle } from "@/types/flix";
 
 interface FlixManagerContextValue {
   selectedSeason: number | null;
@@ -53,7 +55,7 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
 
   const isTV = isTVShow(tmdbMedia);
 
-  const { tmdb, flix, type } = useTMDBFlix(
+  const { isLoading: isTMDBFlixLoading, tmdb, flix, type } = useTMDBFlix(
     isTV ? "series" : "movie",
     tmdbMedia.id,
   );
@@ -90,7 +92,7 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
   const unifiedMedia = uMovie || selectedEpisode;
 
   const isMediaRegistered = Boolean(uMovie?.flix_id) || selectedEpisode?.flix_exists;
-  const isUnifiedEpisode = unifiedMedia && "episode_number" in unifiedMedia;
+  const isEpisode = unifiedMedia && isUnifiedEpisode(unifiedMedia);
 
   useEffect(() => {
     if (!uSeries) {
@@ -131,12 +133,12 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
         />
       )}
 
-      {!isMediaRegistered && unifiedMedia && (
+      {(!isTMDBFlixLoading &&!isMediaRegistered && unifiedMedia) && (
         <Button
           className="w-full"
           disabled={isRegisterPending}
           onClick={() => {
-            if (isUnifiedEpisode && uSeries) {
+            if (isEpisode && uSeries) {
               startRegisterTransition(async () => {
                 const [
                   newEpisode,
@@ -173,7 +175,7 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
         >
           {isRegisterPending
             ? "Registering..."
-            : isUnifiedEpisode
+            : isEpisode
             ? "Register Episode"
             : "Register Movie"}
         </Button>
@@ -181,13 +183,10 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
 
       {unifiedMedia && isMediaRegistered && (
         <UploadForm
-          title={isUnifiedEpisode ? unifiedMedia.name : unifiedMedia.title}
           mediaData={uMovie || selectedEpisode}
           tmdbId={unifiedBase.id.toString()}
-          episodeNumber={selectedEpisode?.episode_number}
-          seasonNumber={selectedEpisode?.season_number}
           onVideoUploadFinish={() => {
-            if (isUnifiedEpisode && selectedEpisode) {
+            if (isEpisode && selectedEpisode) {
               patchUnifiedEpisode({
                 has_video: true,
                 season: selectedEpisode.season_number,
@@ -196,6 +195,28 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
             } else if (uMovie) {
               patchUnifiedMovie({
                 has_video: true,
+              });
+            }
+          }}
+          onNewSubtitles={(subtitles) => {
+            const newSubtitles: FlixSubtitle[] = subtitles.map((s) => ({
+              id: parseInt(s.id),
+              name: s.name,
+              srclng: s.srclng,
+              is_default: s.is_default,
+              subtitle: s.subtitle instanceof File ? "" : s.subtitle?.toString() || "",
+              subtitle_exists: Boolean(s.subtitle),
+            }));
+
+            if (isEpisode && selectedEpisode) {
+              patchUnifiedEpisode({
+                season: selectedEpisode.season_number,
+                episode_number: selectedEpisode.episode_number,
+                subtitles: newSubtitles,
+              });
+            } else if (uMovie) {
+              patchUnifiedMovie({
+                subtitles: newSubtitles,
               });
             }
           }}

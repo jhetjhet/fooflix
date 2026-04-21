@@ -1,26 +1,42 @@
-import { Subtitle } from "@/types/tmdb";
 import { Checkbox } from "../ui/checkbox";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Button } from "../ui/button";
 import { Trash2 } from "lucide-react";
-import { subtitleLanguages } from "@/lib/mock-data";
-
+import { FlixSubtitleForm } from "@/types/flix";
+import { useRef, useState } from "react";
+import ISO6391 from "iso-639-1";
 
 interface SubtitleItemProps {
-  sub: Subtitle;
-  onUpdate: (id: string, updates: Partial<Subtitle>) => void;
+  sub: FlixSubtitleForm;
+  onUpdate: (id: string, updates: Partial<FlixSubtitleForm>) => void;
   onSetDefault: (id: string) => void;
   onRemove: (id: string) => void;
+  subtitleOptions?: { value: string; label: string }[];
 }
 
-export default function SubtitleItem({ sub, onUpdate, onSetDefault, onRemove }: SubtitleItemProps) {
+export default function SubtitleItem({
+  sub,
+  onUpdate,
+  onSetDefault,
+  onRemove,
+  subtitleOptions = [],
+}: SubtitleItemProps) {
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+
+  const subtitleFileRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
       <div className="flex items-center gap-2">
         <Checkbox
           id={`default-${sub.id}`}
-          checked={sub.isDefault}
+          checked={sub.is_default}
           onCheckedChange={() => onSetDefault(sub.id)}
         />
         <label
@@ -31,41 +47,56 @@ export default function SubtitleItem({ sub, onUpdate, onSetDefault, onRemove }: 
         </label>
       </div>
 
-      <Input
-        placeholder="Subtitle name"
-        value={sub.name}
-        onChange={(e) => onUpdate(sub.id, { name: e.target.value })}
-        className="flex-1"
-      />
-
       <Select
-        value={sub.language}
-        onValueChange={(value) => onUpdate(sub.id, { language: value })}
+        open={isSelectOpen}
+        onOpenChange={setIsSelectOpen}
+        value={sub.srclng}
+        onValueChange={(value) => {
+          const name = ISO6391.getName(value);
+          
+          onUpdate(sub.id, { srclng: value, name });
+        }}
       >
         <SelectTrigger className="w-[140px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {subtitleLanguages.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code}>
-              {lang.name}
+          {!isSelectOpen && (
+            <SelectItem value={sub.srclng}>
+              {sub.name} ({sub.srclng})
+            </SelectItem>
+          )}
+
+          {isSelectOpen && subtitleOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
-      <div className="relative">
+      <div className="relative ml-auto">
         <input
+          hidden
+          ref={subtitleFileRef}
           type="file"
           accept=".srt,.vtt,.ass,.ssa"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) onUpdate(sub.id, { file, name: sub.name || file.name.replace(/\.[^/.]+$/, "") });
+            if (file)
+              onUpdate(sub.id, {
+                subtitle: file,
+                name: sub.name,
+              });
           }}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
-        <Button variant="outline" size="sm">
-          {sub.file ? "Change" : "Upload"}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => subtitleFileRef.current?.click()}
+        >
+          {sub.subtitle ? "Change" : "Upload"}
         </Button>
       </div>
 
