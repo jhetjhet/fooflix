@@ -3,11 +3,11 @@ import {
   FlixGenre,
   FlixMediaType,
   FlixMovie,
+  FlixMovieSchema,
   FlixResponse,
   FlixSeries,
+  FlixSeriesSchema,
   FlixTypeMap,
-  FlixUserRegister,
-  JWTResponse,
 } from "@/types/flix";
 
 const FLIX_API_BASE = "http://localhost:8000/api/";
@@ -79,7 +79,33 @@ export async function fetchFlixDetails<T extends keyof FlixTypeMap>({
     throw new Error(`Flix API error: ${response.status}`);
   }
 
-  return response.json();
+  const responseData = await response.json();
+
+  return responseData;
+}
+
+export async function fetchFlixMovie(id: string): Promise<FlixMovie> {
+  const data = await fetchFlixDetails({ type: "movie", id });
+
+  const dataRes = FlixMovieSchema.safeParse(data);
+
+  if (!dataRes.success) {
+    throw new Error("Invalid Flix movie data");
+  }
+
+  return dataRes.data;
+}
+
+export async function flixSeries(id: string): Promise<FlixSeries> {
+  const data = await fetchFlixDetails({ type: "series", id });
+
+  const dataRes = FlixSeriesSchema.safeParse(data);
+
+  if (!dataRes.success) {
+    throw new Error("Invalid Flix series data");
+  }
+
+  return dataRes.data;
 }
 
 export function flixIsSeries(item: FlixMovie | FlixSeries): item is FlixSeries {

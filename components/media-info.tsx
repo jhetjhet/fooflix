@@ -8,9 +8,10 @@ import {
   Tv,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import Link from "next/link";
 import { TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
 import { Skeleton } from "./ui/skeleton";
+import { useTransition } from "react";
+import { createInviteLink } from "@/app/actions/node";
 
 function isTMDBTVShow(
   media: TMDBMovieDetails | TMDBTVShowDetails,
@@ -23,6 +24,8 @@ export default function MediaInfo({
 }: {
   media: TMDBMovieDetails | TMDBTVShowDetails;
 }) {
+  const [isCreateInviteLinkPending, startCreateInviteLinkTransition] = useTransition();
+
   const isTV = isTMDBTVShow(media);
 
   const title = isTV ? media.name : media.title;
@@ -113,11 +116,22 @@ export default function MediaInfo({
           Watch Now
         </Button>
 
-        <Button variant="outline" className="w-full gap-2" size="lg" asChild>
-          <Link href={watchTogetherLink}>
-            <Users className="size-5" />
-            Watch Together
-          </Link>
+        <Button 
+          variant="outline" 
+          className="w-full 
+          gap-2" 
+          size="lg"
+          disabled={isCreateInviteLinkPending}
+          onClick={() => {
+            startCreateInviteLinkTransition(async () => {
+              const resp = await createInviteLink(media.id.toString());
+
+              console.log("Invite link response:", resp);
+            });
+          }}
+        >
+          <Users className="size-5" />
+          {isCreateInviteLinkPending ? "Creating Link..." : "Watch Together"}
         </Button>
       </div>
 

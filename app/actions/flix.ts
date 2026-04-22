@@ -1,6 +1,6 @@
 "use server";
 
-import { resFail, resOk, withErrorHandling } from "@/lib/response-wrappers";
+import { handleResponse, resFail, resOk, withErrorHandling } from "@/lib/response-wrappers";
 import { flixFetch } from "@/lib/flix-fetch";
 import { FetchResponse } from "@/types";
 import {
@@ -18,37 +18,6 @@ import {
   FlixSubtitleFormSchema,
   FlixSubtitleSchema,
 } from "@/types/flix";
-import zod from "zod";
-
-async function handleResponse<T>(
-  response: Response,
-  schema?: zod.ZodSchema,
-): Promise<FetchResponse<T>> {
-  if (!response.ok) {
-    return resFail({
-      message: `Request failed with status ${response.status}`,
-      status: response.status,
-    });
-  }
-
-  const jsonData = await response.json();
-
-  if (schema) {
-    const parseResult = schema.safeParse(jsonData);
-
-    if (!parseResult.success) {
-      console.error("Response validation error:", parseResult.error);
-      return resFail({
-        message: "Invalid response data",
-        status: 500,
-      });
-    }
-
-    return resOk(parseResult.data, response.status);
-  }
-
-  return resOk(jsonData, response.status);
-}
 
 export const createFlixMedia = withErrorHandling(
   async (

@@ -1,0 +1,61 @@
+import MediaPageContainer from "@/components/media-page/container";
+import { flixFetch } from "@/lib/flix-fetch";
+import { fetchFlixMovie } from "@/services/flix";
+import { getTMDBDetails } from "@/services/tmdb";
+import { unifiedMovie } from "@/services/unified";
+import { WTRoom, WTRoomSchema } from "@/types/flix";
+import { notFound } from "next/navigation";
+import WatchTogetherMoviePageState from "./_components/watch-together-page-state";
+
+async function fetchRoomDetails(roomId: string): Promise<WTRoom> {
+  const resp = await flixFetch(`/watch-together/${roomId}/`, {}, process.env.NODE_API_URL);
+
+  if (!resp.ok) {
+    throw new Error("Failed to fetch room details");
+  }
+
+  const roomResult = WTRoomSchema.safeParse(await resp.json());
+
+  if (!roomResult.success) {
+    console.error("Invalid room data:", roomResult.error);
+    throw new Error("Invalid room data");
+  }
+
+  return roomResult.data;
+}
+
+interface WatchTogetherMoviePageProps {
+  params: { roomId: string };
+}
+
+export default async function WatchTogetherMoviePage({
+  params,
+}: WatchTogetherMoviePageProps) {
+  const { roomId } = await params;
+
+  const roomDetails = await fetchRoomDetails(roomId);
+
+  if (!roomDetails) {
+    notFound();
+  }
+
+  const flixMovie = await fetchFlixMovie(roomDetails.movieId);
+  const tmdbMovie = await getTMDBDetails({
+    type: "movie",
+    id: parseInt(roomDetails.movieId),
+  });
+
+  const uMovie = unifiedMovie(tmdbMovie, flixMovie);
+
+  return (
+    <MediaPageContainer
+      title={uMovie.title}
+      backdropPath={uMovie.backdrop_path}
+    >
+      <WatchTogetherMoviePageState 
+        movie={uMovie}
+        shareUrl={""}
+      />
+    </MediaPageContainer>
+  );
+}

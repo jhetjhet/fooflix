@@ -115,6 +115,16 @@ export const FlixSubtitleFormSchema = zod.object({
   srclng: zod.string().default("en"),
 });
 
+export const WTRoomSchema = zod.object({
+  currentTime: zod.number(),
+  hasActiveHost: zod.boolean(),
+  isHost: zod.boolean(),
+  isPlaying: zod.boolean(),
+  movieId: zod.string(),
+  roomId: zod.string(),
+  syncInterval: zod.number(),
+});
+
 export interface FlixResponse<T> {
   number: number;
   results: T[];
@@ -170,3 +180,5 @@ export type FlixEpisodeForm = z.infer<typeof FlixEpisodeFormSchema>;
 export type FlixSeasonForm = z.infer<typeof FlixSeasonFormSchema>;
 
 export type FlixSubtitleForm = z.infer<typeof FlixSubtitleFormSchema>;
+
+export type WTRoom = z.infer<typeof WTRoomSchema>;
