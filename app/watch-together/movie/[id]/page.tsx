@@ -21,6 +21,8 @@ import { getMovieDetails, getBackdropUrl } from "@/services/tmdb";
 import { generateRoomId } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/use-auth";
 import type { TMDBMovieDetails } from "@/types/tmdb";
+import WatchTogetherHeader from "@/components/media-page/watch-together-header";
+import MediaPageContainer from "@/components/media-page/container";
 
 interface WatchTogetherMoviePageProps {
   params: Promise<{ id: string }>;
@@ -36,7 +38,6 @@ export default function WatchTogetherMoviePage({
   const [roomId] = useState(() => generateRoomId());
   const [watcherCount, setWatcherCount] = useState(1);
   const [isHost] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   const {
     data: movie,
@@ -64,16 +65,6 @@ export default function WatchTogetherMoviePage({
       ? `${window.location.origin}/watch-together/movie/${movieId}?room=${roomId}`
       : "";
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      alert(`Share this link with friends:\n\n${shareUrl}`);
-    }
-  };
-
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -95,68 +86,19 @@ export default function WatchTogetherMoviePage({
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section with Backdrop */}
-      <div className="relative h-[30vh] md:h-[40vh]">
-        <div className="absolute inset-0">
-          <img
-            src={getBackdropUrl(movie.backdrop_path, "original")}
-            alt={movie.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/40" />
-        </div>
-
-        {/* Back Button */}
-        <div className="absolute top-4 left-4 z-10">
-          <Button variant="ghost" size="sm" asChild className="gap-2">
-            <Link href={`/movie/${movieId}`}>
-              <ArrowLeft className="size-4" />
-              Back to Movie
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Content */}
+    <MediaPageContainer
+      title={movie.title}
+      backdropPath={movie.backdrop_path}
+      backLink={{ href: "/", label: "Back to Home" }}
+    >
       <div className="container mx-auto px-4 -mt-20 relative z-10">
         {/* Watch Together Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 p-4 rounded-lg bg-card border border-border">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <Users className="size-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold">Watch Together</h2>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span>
-                  Room: <code className="text-primary font-mono">{roomId}</code>
-                </span>
-                <span>|</span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  {watcherCount} watching
-                </span>
-                <span>|</span>
-                <span>Role: {isHost ? "Host" : "Joiner"}</span>
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={handleCopyLink} variant="outline" className="gap-2">
-            {copied ? (
-              <>
-                <Check className="size-4" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Share2 className="size-4" />
-                Share Link
-              </>
-            )}
-          </Button>
-        </div>
+        <WatchTogetherHeader
+          roomId={roomId}
+          watcherCount={watcherCount}
+          isHost={isHost}
+          shareUrl={shareUrl}
+        />
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Video Player */}
@@ -165,18 +107,6 @@ export default function WatchTogetherMoviePage({
               title={movie.title}
               posterUrl={getBackdropUrl(movie.backdrop_path, "w1280")}
             />
-
-            {/* Chat Placeholder */}
-            <div className="p-4 rounded-lg bg-card border border-border">
-              <h3 className="font-semibold mb-3">Live Chat</h3>
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                <p>
-                  Mock Chat: Real-time chat would appear here.
-                  <br />
-                  This is a placeholder for the watch party chat feature.
-                </p>
-              </div>
-            </div>
 
             {/* Cast */}
             {movie.credits?.cast && movie.credits.cast.length > 0 && (
@@ -269,7 +199,7 @@ export default function WatchTogetherMoviePage({
           </div>
         </div>
       </div>
-    </div>
+    </MediaPageContainer>
   );
 }
 
