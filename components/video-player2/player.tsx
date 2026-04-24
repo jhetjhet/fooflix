@@ -88,6 +88,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
 
     const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
     const clickTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+    const lastTapRef = useRef<number>(0);
 
     const [isPlaying, setIsPlaying] = useState(playingProp ?? false);
     const [isMuted, setIsMuted] = useState(mutedProp ?? false);
@@ -155,7 +156,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     // ── Playback ────────────────────────────────────────────────────────────
     const handlePlayPause = () => setIsPlaying((prev) => !prev);
 
-    // ── Click / double-click ────────────────────────────────────────────────
+    // ── Click / double-click (mouse) ────────────────────────────────────────
     const handlePlayerClick = () => {
       if (clickTimerRef.current) return;
       clickTimerRef.current = setTimeout(() => {
@@ -170,6 +171,24 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
         clickTimerRef.current = null;
       }
       handleFullscreen();
+    };
+
+    // ── Double-tap (touch) → fullscreen ─────────────────────────────────────
+    const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+      const now = Date.now();
+      const timeSinceLastTap = now - lastTapRef.current;
+      if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+        // Double-tap detected — cancel any pending single-tap play/pause
+        if (clickTimerRef.current) {
+          clearTimeout(clickTimerRef.current);
+          clickTimerRef.current = null;
+        }
+        e.preventDefault();
+        handleFullscreen();
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
     };
 
     // ── Volume ──────────────────────────────────────────────────────────────
@@ -272,6 +291,102 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
       }
     };
 
+    // ── Keyboard shortcuts ────────────────────────────────────────────────
+    /**
+     * Handles keyboard shortcuts when the player container is focused.
+     *
+     * Space / K  — toggle play/pause
+     * F          — toggle fullscreen  (Esc to exit is handled natively by the browser)
+     * M          — toggle mute
+     * ArrowLeft  — seek back 5 s
+     * ArrowRight — seek forward 5 s
+     * J          — seek back 10 s  (YouTube-style)
+     * L          — seek forward 10 s (YouTube-style)
+     * ArrowUp    — volume +10 %
+     * ArrowDown  — volume −10 %
+     * 0–9        — jump to 0 %–90 % of video duration
+     */
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      // Don't intercept when a child input / select has focus
+      const tag = (e.target as HTMLElement).tagName.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      const video = playerRef.current;
+
+      const seekBy = (delta: number) => {
+        if (!video) return;
+        const dur = video.duration || 0;
+        const newTime = Math.max(0, Math.min(dur, video.currentTime + delta));
+        video.currentTime = newTime;
+        setCurrentTime(newTime);
+        if (isFinite(dur) && dur > 0) setProgress((newTime / dur) * 100);
+      };
+
+      switch (e.key) {
+        case " ":
+        case "k":
+        case "K":
+          e.preventDefault();
+          handlePlayPause();
+          break;
+        case "f":
+        case "F":
+          e.preventDefault();
+          handleFullscreen();
+          break;
+        case "m":
+        case "M":
+          e.preventDefault();
+          handleMuteToggle();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          seekBy(-5);
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          seekBy(5);
+          break;
+        case "j":
+        case "J":
+          e.preventDefault();
+          seekBy(-10);
+          break;
+        case "l":
+        case "L":
+          e.preventDefault();
+          seekBy(10);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setCurrentVolume((v) => {
+            const next = Math.min(1, Math.round((v + 0.1) * 10) / 10);
+            if (next > 0) setIsMuted(false);
+            return next;
+          });
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          setCurrentVolume((v) => {
+            const next = Math.max(0, Math.round((v - 0.1) * 10) / 10);
+            if (next === 0) setIsMuted(true);
+            return next;
+          });
+          break;
+        default:
+          // 0–9: jump to that tenth of the video
+          if (/^[0-9]$/.test(e.key) && video) {
+            e.preventDefault();
+            const dur = video.duration || 0;
+            const newTime = (parseInt(e.key) / 10) * dur;
+            video.currentTime = newTime;
+            setCurrentTime(newTime);
+            if (isFinite(dur) && dur > 0) setProgress((newTime / dur) * 100);
+          }
+          break;
+      }
+    };
+
     // ── Captions ────────────────────────────────────────────────────────────
     const handleCaptionChange = (idStr: string) => {
       const id = idStr === "off" ? null : Number(idStr);
@@ -288,11 +403,13 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
       <div
         ref={containerRef}
         className={cn(
-          "relative w-full aspect-video bg-black rounded-lg overflow-hidden group",
+          "relative w-full aspect-video bg-black rounded-lg overflow-hidden group focus:outline-none",
           className,
         )}
+        tabIndex={0}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onKeyDown={handleKeyDown}
       >
         {src ? (
           <ReactPlayer
@@ -335,11 +452,12 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
           )
         )}
 
-        {/* Click / double-click capture area */}
+        {/* Click / double-click / double-tap capture area */}
         <div
           className="absolute inset-0 z-10 cursor-pointer"
           onClick={handlePlayerClick}
           onDoubleClick={handlePlayerDoubleClick}
+          onTouchEnd={handleTouchEnd}
         />
 
         {/* Dark overlay */}
