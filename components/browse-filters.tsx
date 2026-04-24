@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { TMDBGenre, MediaType } from "@/types/tmdb";
 import { getYearOptions } from "@/lib/mock-data";
 import useSWR from "swr";
 import { fetchFlixGenres } from "@/services/flix";
@@ -50,12 +49,10 @@ export function BrowseFiltersComponent({
     filters.query ||
     filters.type !== "all" ||
     filters.genre !== null ||
-    filters.sortBy !== "-date_upload" ||
+    filters.sort_by !== "-date_upload" ||
     filters.year !== null;
   
   const { data: flixGenres = [] } = useSWR<FlixGenre[]>("genres", fetchFlixGenres);
-
-  console.log("flixGenres", flixGenres);
 
   return (
     <div className="flex flex-col gap-4">
@@ -115,8 +112,8 @@ export function BrowseFiltersComponent({
 
         {/* Sort By */}
         <Select
-          value={filters.sortBy}
-          onValueChange={(value) => onFiltersChange({ sortBy: value, page: 1 })}
+          value={filters.sort_by}
+          onValueChange={(value) => onFiltersChange({ sort_by: value, page: 1 })}
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Sort By" />

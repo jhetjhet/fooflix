@@ -1,7 +1,11 @@
 import { FlixUser, FlixUserSchema, JWTResponse, JWTResponseSchema } from "@/types/flix";
 import { cookies, headers } from "next/headers";
 
-export async function flixFetch(endpoint: string, options: RequestInit = {}) {
+export async function flixFetch(
+  endpoint: string, 
+  options: RequestInit = {},
+  baseUrl: string = process.env.DJANGO_API_URL || ""
+) {
   const allHeaders = await headers();
   const cookieStore = await cookies();
   const sessionValue = cookieStore.get("session")?.value;
@@ -22,10 +26,9 @@ export async function flixFetch(endpoint: string, options: RequestInit = {}) {
     respHeaders.set("Authorization", `Bearer ${authToken}`);
   }
 
-  return fetch(`${process.env.DJANGO_API_URL}${endpoint}`, {
+  return fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers: respHeaders,
-    cache: "no-store", // Ensure we don't cache API responses
   });
 }
 
@@ -38,7 +41,9 @@ export async function fetchFlixUser(): Promise<FlixUser | null> {
       return null;
     }
 
-    const userResult = FlixUserSchema.safeParse(await response.json());
+    const responseData = await response.json();
+
+    const userResult = FlixUserSchema.safeParse(responseData);
 
     if (!userResult.success) {
       console.error("Invalid user data:", userResult.error);

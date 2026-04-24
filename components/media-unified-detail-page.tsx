@@ -1,8 +1,5 @@
 import { getBackdropUrl } from "@/services/tmdb";
 import { TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
-import { Button } from "./ui/button";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { VideoPlayer } from "./video-player";
 import MediaInfo, { MediaInfoSkeleton } from "./media-info";
 import { SeasonSelector } from "./season-selector";
@@ -12,6 +9,7 @@ import { UnifiedEpisode, UnifiedMovie, UnifiedSeries } from "@/types/unified";
 import { VideoPlayer2 } from "./video-player2";
 import { useState } from "react";
 import { FlixMedia } from "@/types/flix";
+import MediaPageContainer from "./media-page/container";
 
 function isUnifiedSeries(
   media: TMDBMovieDetails | TMDBTVShowDetails,
@@ -41,31 +39,11 @@ export default function MediaUnifiedDetailPage({
   const mediaData: FlixMedia | null = isTV ? selectedEpisode : media;
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section with Backdrop */}
-      <div className="relative h-[50vh] md:h-[60vh]">
-        <div className="absolute inset-0">
-          <img
-            src={getBackdropUrl(media.backdrop_path, "original")}
-            alt={mediaTtle}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
-        </div>
-
-        {/* Back Button */}
-        <div className="absolute top-20 left-4 z-10">
-          <Button variant="ghost" size="sm" asChild className="gap-2">
-            <Link href="/">
-              <ArrowLeft className="size-4" />
-              Back
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Content */}
+    <MediaPageContainer
+      title={mediaTtle}
+      backdropPath={media.backdrop_path}
+      backLink={{ href: "/", label: "Back to Home" }}
+    >
       <div className="container mx-auto px-4 -mt-32 relative z-10 pb-12">
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
           {/* Left Column - Video Player */}
@@ -130,6 +108,6 @@ export default function MediaUnifiedDetailPage({
           </div>
         </div>
       </div>
-    </div>
+    </MediaPageContainer>
   );
 }

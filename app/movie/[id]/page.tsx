@@ -24,9 +24,7 @@ export default function MovieDetailPage({ params }: MovieDetailPageProps) {
 
   if (tmdb && flix) {
     unifiedMovieData = unifiedMovie(tmdb, flix);
-  } 
-
-  console.log("unifiedMovieData", unifiedMovieData);
+  }
 
   return (
     <MediaUnifiedDetailPage media={unifiedMovieData} isLoading={isLoading} />

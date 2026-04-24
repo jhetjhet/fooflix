@@ -59,7 +59,10 @@ export const FlixSeriesSchema = FlixBaseSchema.extend({
 
 export const FlixUserSchema = zod.object({
   id: zod.string(),
-  email: zod.string().email(),
+  email: z.union([
+    z.literal(""), 
+    z.string().email()
+  ]).optional().nullable(),
   username: zod.string(),
   can_create_flix: zod.boolean(),
 });
