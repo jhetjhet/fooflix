@@ -14,6 +14,8 @@ import { VideoPlayer2, VideoPlayer2Handle } from "@/components/video-player2";
 import { useEffect, useRef, useState } from "react";
 import { WTEventDataSchema, WTRoom } from "@/types/watch-together";
 import { useAuthContext } from "@/context/authentication";
+import useWTUserHydrates from "@/hooks/use-wt-user-hydrates";
+import ViewersList from "@/components/media-page/viewers-list";
 
 interface WTClientPageProps {
   movie: UnifiedMovie;
@@ -24,17 +26,23 @@ export default function WTClientPage({
   movie,
   roomDetails,
 }: WTClientPageProps) {
-  const { isLoggedIn, user } = useAuthContext();
+  const { user } = useAuthContext();
   const vidPlayerRef = useRef<VideoPlayer2Handle>(null);
 
   const [shareUrl, setShareUrl] = useState("");
 
   const { 
     syncState,
-    eventState, 
-    roomState, 
-    userCount,
+    eventState,
+    users,
   } = useWTControls(roomDetails.roomId);
+
+  const {
+    isLoading,
+    hydratedUsers: wtUsers,
+  } = useWTUserHydrates(users, user);
+
+  const userCount = users?.length || 0;
 
   useEffect(() => {
     if (!roomDetails?.roomId) return;
@@ -75,8 +83,6 @@ export default function WTClientPage({
     }
 
     vidPlayerRef.current?.setPaused(!isPlaying);
-
-    console.log("Calculated latency:", latencyMs, "ms", projectedTime, "drift:", drift);
   }, [syncState]);
 
   useEffect(() => {
@@ -99,14 +105,10 @@ export default function WTClientPage({
     }
     else if (type === "seek") {
       const { time = 0 } = eventRes.data;
-      console.log("Seeking to:", time);
+
       vidPlayerRef.current?.seekTo(time);
     }
   }, [eventState]);
-
-  useEffect(() => {
-    console.log("Room State Changed:", roomState);
-  }, [roomState]);
 
   return (
     <div className="container mx-auto px-4 -mt-20 relative z-10">
@@ -190,27 +192,12 @@ export default function WTClientPage({
           </div>
 
           {/* Viewers List (Mock) */}
-          <div className="pt-4 border-t border-border">
-            <h3 className="font-semibold mb-3">Viewers ({userCount})</h3>
-            <div className="flex flex-wrap gap-2">
-              {isLoggedIn && user && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-sm">
-                  <span>{user.username} (You)</span>
-                </div>
-              )}
-              {Array.from({
-                length: userCount,
-              }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm"
-                >
-                  <div className="w-6 h-6 rounded-full bg-muted-foreground/30" />
-                  <span>Guest {i + 1}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ViewersList 
+            userCount={userCount}
+            users={wtUsers}
+            user={user}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>

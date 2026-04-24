@@ -64,7 +64,7 @@ export const FlixUserSchema = zod.object({
     z.string().email()
   ]).optional().nullable(),
   username: zod.string(),
-  can_create_flix: zod.boolean(),
+  can_create_flix: zod.boolean().optional(),
 });
 
 export const FlixUserRegisterSchema = zod.object({

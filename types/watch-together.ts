@@ -1,5 +1,16 @@
 import zod from "zod";
 
+export const WTUserEventSchema = zod.object({
+  userId: zod.string(),
+  joinedAt: zod.coerce.number().optional(),
+  leftAt: zod.coerce.number().optional(),
+  isHost: zod.preprocess((val) => {
+    if (val === "true") return true;
+    if (val === "false") return false;
+    return val;
+  }, zod.boolean()),
+});
+
 export const WTRoomSchema = zod.object({
   currentTime: zod.number(),
   hasActiveHost: zod.boolean(),
@@ -27,6 +38,8 @@ export const WTEventDataSchema = zod.object({
   targetSocketId: zod.string().optional(),
   request: zod.boolean().optional(),
 });
+
+export type WTUserEvent = zod.infer<typeof WTUserEventSchema>;
 
 export type WTEventData = zod.infer<typeof WTEventDataSchema>;
 
