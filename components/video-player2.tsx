@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -161,6 +162,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(fu
   const [progress, setProgress] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   // ── Sync external playing prop ─────────────────────────────────────────────
   useEffect(() => {
@@ -303,8 +305,12 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(fu
   };
 
   const handlePlaying = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    setIsBuffering(false);
     onPlaying?.(e);
   };
+
+  const handleWaiting = () => setIsBuffering(true);
+  const handleCanPlay = () => setIsBuffering(false);
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -344,6 +350,8 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(fu
           onError={onError}
           onProgress={onProgress}
           onPlaying={handlePlaying}
+          onWaiting={handleWaiting}
+          onCanPlay={handleCanPlay}
           onTimeUpdate={handleTimeUpdate}
           onDurationChange={handleDurationChange}
           onLoadedMetadata={handleLoadedMetadata}
@@ -368,8 +376,15 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(fu
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/40" />
 
+      {/* Buffering spinner */}
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <Spinner className="size-10 text-white/80" />
+        </div>
+      )}
+
       {/* Play icon – visual only, interaction handled by capture area */}
-      {!isPlaying && (
+      {!isPlaying && !isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center">
             <Play className="size-10 fill-primary-foreground text-primary-foreground ml-1" />
