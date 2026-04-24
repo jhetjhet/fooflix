@@ -12,6 +12,8 @@ import { TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
 import { Skeleton } from "./ui/skeleton";
 import { useTransition } from "react";
 import { createInviteLink } from "@/app/actions/node";
+import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 function isTMDBTVShow(
   media: TMDBMovieDetails | TMDBTVShowDetails,
@@ -24,6 +26,8 @@ export default function MediaInfo({
 }: {
   media: TMDBMovieDetails | TMDBTVShowDetails;
 }) {
+  const router = useRouter();
+
   const [isCreateInviteLinkPending, startCreateInviteLinkTransition] = useTransition();
 
   const isTV = isTMDBTVShow(media);
@@ -32,10 +36,6 @@ export default function MediaInfo({
   const releaseDate = isTV ? media.first_air_date : media.release_date;
 
   const runtime = isTV ? media.episode_run_time?.[0] || 0 : media.runtime;
-
-  const watchTogetherLink = isTV
-    ? `/watch-together/tv/${media.id}`
-    : `/watch-together/movie/${media.id}`;
 
   return (
     <div className="space-y-4">
@@ -124,9 +124,18 @@ export default function MediaInfo({
           disabled={isCreateInviteLinkPending}
           onClick={() => {
             startCreateInviteLinkTransition(async () => {
-              const resp = await createInviteLink(media.id.toString());
+              const response = await createInviteLink(media.id.toString());
 
-              console.log("Invite link response:", resp);
+              if (!response.ok) {
+                toast({
+                  title: "Failed to create invite link",
+                  description: response.error?.message || "An error occurred while creating the invite link. Please try again.",
+                  variant: "destructive",
+                });
+                return;
+              }
+
+              router.push(`/watch-together/movie/${response?.data?.roomId}`);
             });
           }}
         >

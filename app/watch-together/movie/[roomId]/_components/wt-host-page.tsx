@@ -5,42 +5,90 @@ import {
   Clock,
   Calendar,
 } from "lucide-react";
-import { VideoPlayer } from "@/components/video-player";
 import { CastList } from "@/components/cast-list";
 import { getBackdropUrl } from "@/services/tmdb";
-import { useAuth } from "@/hooks/use-auth";
 import WatchTogetherHeader from "@/components/media-page/watch-together-header";
 import { UnifiedMovie } from "@/types/unified";
+import useWTControls from "@/hooks/use-wt-controls";
+import { VideoPlayer2, VideoPlayer2Handle } from "@/components/video-player2";
+import { useEffect, useRef, useState } from "react";
+import { WTEventData, WTEventType, WTRoom } from "@/types/watch-together";
+import { useAuthContext } from "@/context/authentication";
 
-interface WatchTogetherMoviePageProps {
+interface WTHostPageProps {
   movie: UnifiedMovie;
-  shareUrl: string;
+  roomDetails: WTRoom;
 }
 
-export default function WatchTogetherMoviePageState({
+export default function WTHostPage({
   movie,
-  shareUrl,
-}: WatchTogetherMoviePageProps) {
-  const { isLoggedIn, user } = useAuth();
+  roomDetails,
+}: WTHostPageProps) {
+  const { isLoggedIn, user } = useAuthContext();
+  const vidPlayerRef = useRef<VideoPlayer2Handle>(null);
 
-  const watcherCount = 0;
+  const [shareUrl, setShareUrl] = useState("");
+
+  const { 
+    roomState, 
+    userCount,
+    emitWTEvent,
+  } = useWTControls(roomDetails.roomId);
+
+  const performWTAction = (type: WTEventType, time: number, isPlaying: boolean) => {
+    const eventData: WTEventData = {
+      roomId: roomDetails.roomId,
+      time,
+      isPlaying,
+      serverTime: Date.now(),
+    };
+
+    emitWTEvent(type, eventData);
+  }
+
+  useEffect(() => {
+    if (!roomDetails?.roomId) return;
+
+    setShareUrl(`${window.location.origin}/watch-together/movie/${roomDetails.roomId}`);
+  }, [roomDetails?.roomId]);
+
+  useEffect(() => {
+    if (!roomState || !vidPlayerRef.current) return;
+
+    const interval = setInterval(() => {
+      emitWTEvent("sync", {
+        roomId: roomDetails.roomId,
+        time: vidPlayerRef.current?.getCurrentTime() ?? 0,
+        isPlaying: !vidPlayerRef.current?.isPaused(),
+        serverTime: Date.now(),
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [roomState, vidPlayerRef.current]);
 
   return (
     <div className="container mx-auto px-4 -mt-20 relative z-10">
       {/* Watch Together Header */}
       <WatchTogetherHeader
-        roomId={"test-room-id"}
-        watcherCount={1}
-        isHost={false}
+        roomId={roomDetails.roomId}
+        watcherCount={userCount}
+        isHost={roomDetails.isHost}
         shareUrl={shareUrl}
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Column - Video Player */}
         <div className="flex-1 space-y-6 min-w-0">
-          <VideoPlayer
+          <VideoPlayer2
+            ref={vidPlayerRef}
             title={movie.title}
+            playbackRate={1}
             posterUrl={getBackdropUrl(movie.backdrop_path, "w1280")}
+            src={movie.video_url || undefined}
+            onSeek={(time) => performWTAction("seek", time, !vidPlayerRef.current?.isPaused())}
+            onPlay={() => performWTAction("play", vidPlayerRef.current?.getCurrentTime() ?? 0, true)}
+            onPause={() => performWTAction("pause", vidPlayerRef.current?.getCurrentTime() ?? 0, false)}
           />
 
           {/* Cast */}
@@ -105,21 +153,15 @@ export default function WatchTogetherMoviePageState({
 
           {/* Viewers List (Mock) */}
           <div className="pt-4 border-t border-border">
-            <h3 className="font-semibold mb-3">Viewers ({watcherCount})</h3>
+            <h3 className="font-semibold mb-3">Viewers ({userCount})</h3>
             <div className="flex flex-wrap gap-2">
               {isLoggedIn && user && (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-sm">
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-6 h-6 rounded-full"
-                  />
-                  <span>{user.name} (You)</span>
-                  <span className="text-xs text-primary">Host</span>
+                  <span>{user.username} (You)</span>
                 </div>
               )}
               {Array.from({
-                length: Math.max(0, watcherCount - 1),
+                length: userCount,
               }).map((_, i) => (
                 <div
                   key={i}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import type { ReactPlayerProps, Config } from "react-player/types";
 import {
@@ -27,6 +27,25 @@ function formatTime(seconds: number): string {
     return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// ─── Imperative handle ───────────────────────────────────────────────────────
+
+export interface VideoPlayer2Handle {
+  /** Pauses or resumes playback. Pass true to pause, false to play. */
+  setPaused: (paused: boolean) => void;
+  /** Seeks to the given time in seconds. */
+  seekTo: (time: number) => void;
+  /** Sets the playback rate. */
+  setPlaybackRate: (rate: number) => void;
+  /** Returns the current playback position in seconds. */
+  getCurrentTime: () => number;
+  /** Returns the total duration in seconds. */
+  getDuration: () => number;
+  /** Returns true if the video is currently paused. */
+  isPaused: () => boolean;
+  /** Backward-compatible alias for seekTo. */
+  seek: (time: number) => void;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -61,11 +80,16 @@ export interface VideoPlayer2Props {
   onEnded?: ReactPlayerProps["onEnded"];
   onError?: ReactPlayerProps["onError"];
   onProgress?: ReactPlayerProps["onProgress"];
+  onPlaying?: ReactPlayerProps["onPlaying"];
+  onTimeUpdate?: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
+  onDurationChange?: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
+  /** Called when the user manually seeks via the progress bar, with the target time in seconds. */
+  onSeek?: (time: number) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function VideoPlayer2({
+export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(function VideoPlayer2Internal({
   title,
   posterUrl,
   className,
@@ -74,7 +98,7 @@ export function VideoPlayer2({
   playing: playingProp,
   muted: mutedProp,
   volume: volumeProp,
-  playbackRate,
+  playbackRate: playbackRateProp,
   loop,
   pip,
   light,
@@ -88,15 +112,50 @@ export function VideoPlayer2({
   onEnded,
   onError,
   onProgress,
-}: VideoPlayer2Props) {
+  onPlaying,
+  onTimeUpdate: onTimeUpdateProp,
+  onDurationChange,
+  onSeek,
+}: VideoPlayer2Props, ref: React.ForwardedRef<VideoPlayer2Handle>) {
   const playerRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // ── Imperative handle ─────────────────────────────────────────────────────
+  useImperativeHandle(ref, () => ({
+    setPaused: (paused: boolean) => setIsPlaying(!paused),
+    seekTo: (time: number) => {
+      const video = playerRef.current;
+      if (!video || !Number.isFinite(time)) return;
+      video.currentTime = time;
+      setCurrentTime(time);
+      const dur = video.duration;
+      if (isFinite(dur) && dur > 0) setProgress((time / dur) * 100);
+    },
+    setPlaybackRate: (rate: number) => {
+      if (!Number.isFinite(rate) || rate <= 0) return;
+      setCurrentPlaybackRate(rate);
+    },
+    getCurrentTime: () => playerRef.current?.currentTime ?? 0,
+    getDuration: () => playerRef.current?.duration ?? 0,
+    isPaused: () => playerRef.current?.paused ?? true,
+    seek: (time: number) => {
+      const video = playerRef.current;
+      if (!video || !Number.isFinite(time)) return;
+      video.currentTime = time;
+      setCurrentTime(time);
+      const dur = video.duration;
+      if (isFinite(dur) && dur > 0) setProgress((time / dur) * 100);
+    },
+  }));
   const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const [isPlaying, setIsPlaying] = useState(playingProp ?? false);
   const [isMuted, setIsMuted] = useState(mutedProp ?? false);
   const [currentVolume, setCurrentVolume] = useState(volumeProp ?? 1);
+  const [currentPlaybackRate, setCurrentPlaybackRate] = useState(
+    playbackRateProp ?? 1,
+  );
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -107,6 +166,12 @@ export function VideoPlayer2({
   useEffect(() => {
     if (playingProp !== undefined) setIsPlaying(playingProp);
   }, [playingProp]);
+
+  useEffect(() => {
+    if (playbackRateProp !== undefined) {
+      setCurrentPlaybackRate(playbackRateProp);
+    }
+  }, [playbackRateProp]);
 
   // ── Fullscreen change listener ─────────────────────────────────────────────
   useEffect(() => {
@@ -183,6 +248,7 @@ export function VideoPlayer2({
     video.currentTime = seekTo;
     setProgress(value[0]);
     setCurrentTime(seekTo);
+    onSeek?.(seekTo);
   };
 
   // ── Time / Duration sync from native video events ──────────────────────────
@@ -195,6 +261,13 @@ export function VideoPlayer2({
       setDuration(dur);
       setProgress((cur / dur) * 100);
     }
+    onTimeUpdateProp?.(e);
+  };
+
+  const handleDurationChange = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const dur = e.currentTarget.duration;
+    if (isFinite(dur) && dur > 0) setDuration(dur);
+    onDurationChange?.(e);
   };
 
   const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -229,9 +302,13 @@ export function VideoPlayer2({
     onEnded?.(e);
   };
 
+  const handlePlaying = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    onPlaying?.(e);
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  return (
+  return (  // eslint-disable-line
     <div
       ref={containerRef}
       className={cn(
@@ -249,7 +326,7 @@ export function VideoPlayer2({
           playing={isPlaying}
           muted={isMuted}
           volume={currentVolume}
-          playbackRate={playbackRate}
+          playbackRate={currentPlaybackRate}
           loop={loop}
           pip={pip}
           light={light}
@@ -266,7 +343,9 @@ export function VideoPlayer2({
           onEnded={handleEnded}
           onError={onError}
           onProgress={onProgress}
+          onPlaying={handlePlaying}
           onTimeUpdate={handleTimeUpdate}
+          onDurationChange={handleDurationChange}
           onLoadedMetadata={handleLoadedMetadata}
         />
       ) : (
@@ -394,4 +473,6 @@ export function VideoPlayer2({
       </div>
     </div>
   );
-}
+});
+
+VideoPlayer2.displayName = "VideoPlayer2";

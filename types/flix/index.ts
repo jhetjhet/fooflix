@@ -59,7 +59,10 @@ export const FlixSeriesSchema = FlixBaseSchema.extend({
 
 export const FlixUserSchema = zod.object({
   id: zod.string(),
-  email: zod.string().email(),
+  email: z.union([
+    z.literal(""), 
+    z.string().email()
+  ]).optional().nullable(),
   username: zod.string(),
   can_create_flix: zod.boolean(),
 });
@@ -113,16 +116,6 @@ export const FlixSubtitleFormSchema = zod.object({
   name: zod.string(),
   is_default: zod.boolean().default(false),
   srclng: zod.string().default("en"),
-});
-
-export const WTRoomSchema = zod.object({
-  currentTime: zod.number(),
-  hasActiveHost: zod.boolean(),
-  isHost: zod.boolean(),
-  isPlaying: zod.boolean(),
-  movieId: zod.string(),
-  roomId: zod.string(),
-  syncInterval: zod.number(),
 });
 
 export interface FlixResponse<T> {
@@ -180,5 +173,3 @@ export type FlixEpisodeForm = z.infer<typeof FlixEpisodeFormSchema>;
 export type FlixSeasonForm = z.infer<typeof FlixSeasonFormSchema>;
 
 export type FlixSubtitleForm = z.infer<typeof FlixSubtitleFormSchema>;
-
-export type WTRoom = z.infer<typeof WTRoomSchema>;

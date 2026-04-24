@@ -41,7 +41,9 @@ export async function fetchFlixUser(): Promise<FlixUser | null> {
       return null;
     }
 
-    const userResult = FlixUserSchema.safeParse(await response.json());
+    const responseData = await response.json();
+
+    const userResult = FlixUserSchema.safeParse(responseData);
 
     if (!userResult.success) {
       console.error("Invalid user data:", userResult.error);
