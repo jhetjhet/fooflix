@@ -76,7 +76,7 @@ export function SettingsMenu({
         <DropdownMenuCheckboxItem
           checked={isPip}
           onCheckedChange={onPipToggle}
-          disabled={!document.pictureInPictureEnabled}
+          disabled={typeof document === "undefined" || !document.pictureInPictureEnabled}
         >
           Picture in Picture
         </DropdownMenuCheckboxItem>

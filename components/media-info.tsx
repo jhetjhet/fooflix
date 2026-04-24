@@ -4,7 +4,6 @@ import {
   Calendar,
   Play,
   Users,
-  ArrowLeft,
   Tv,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -14,6 +13,7 @@ import { useTransition } from "react";
 import { createInviteLink } from "@/app/actions/node";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useAuthContext } from "@/context/authentication";
 
 function isTMDBTVShow(
   media: TMDBMovieDetails | TMDBTVShowDetails,
@@ -28,6 +28,7 @@ export default function MediaInfo({
 }) {
   const router = useRouter();
 
+  const { isLoggedIn } = useAuthContext();
   const [isCreateInviteLinkPending, startCreateInviteLinkTransition] = useTransition();
 
   const isTV = isTMDBTVShow(media);
@@ -116,32 +117,34 @@ export default function MediaInfo({
           Watch Now
         </Button>
 
-        <Button 
-          variant="outline" 
-          className="w-full 
-          gap-2" 
-          size="lg"
-          disabled={isCreateInviteLinkPending}
-          onClick={() => {
-            startCreateInviteLinkTransition(async () => {
-              const response = await createInviteLink(media.id.toString());
+        {isLoggedIn && (
+          <Button 
+            variant="outline" 
+            className="w-full 
+            gap-2" 
+            size="lg"
+            disabled={isCreateInviteLinkPending}
+            onClick={() => {
+              startCreateInviteLinkTransition(async () => {
+                const response = await createInviteLink(media.id.toString());
 
-              if (!response.ok) {
-                toast({
-                  title: "Failed to create invite link",
-                  description: response.error?.message || "An error occurred while creating the invite link. Please try again.",
-                  variant: "destructive",
-                });
-                return;
-              }
+                if (!response.ok) {
+                  toast({
+                    title: "Failed to create invite link",
+                    description: response.error?.message || "An error occurred while creating the invite link. Please try again.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
 
-              router.push(`/watch-together/movie/${response?.data?.roomId}`);
-            });
-          }}
-        >
-          <Users className="size-5" />
-          {isCreateInviteLinkPending ? "Creating Link..." : "Watch Together"}
-        </Button>
+                router.push(`/watch-together/movie/${response?.data?.roomId}`);
+              });
+            }}
+          >
+            <Users className="size-5" />
+            {isCreateInviteLinkPending ? "Creating Link..." : "Watch Together"}
+          </Button>
+        )}
       </div>
 
       {/* Additional */}

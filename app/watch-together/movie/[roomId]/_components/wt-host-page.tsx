@@ -14,6 +14,8 @@ import { VideoPlayer2, VideoPlayer2Handle } from "@/components/video-player2";
 import { useEffect, useRef, useState } from "react";
 import { WTEventData, WTEventType, WTRoom } from "@/types/watch-together";
 import { useAuthContext } from "@/context/authentication";
+import ViewersList from "@/components/media-page/viewers-list";
+import useWTUserHydrates from "@/hooks/use-wt-user-hydrates";
 
 interface WTHostPageProps {
   movie: UnifiedMovie;
@@ -24,16 +26,23 @@ export default function WTHostPage({
   movie,
   roomDetails,
 }: WTHostPageProps) {
-  const { isLoggedIn, user } = useAuthContext();
+  const { user } = useAuthContext();
   const vidPlayerRef = useRef<VideoPlayer2Handle>(null);
 
   const [shareUrl, setShareUrl] = useState("");
 
   const { 
     roomState, 
-    userCount,
+    users,
     emitWTEvent,
   } = useWTControls(roomDetails.roomId);
+
+  const {
+    isLoading,
+    hydratedUsers: wtUsers,
+  } = useWTUserHydrates(users, user);
+  
+  const userCount = users?.length || 0;
 
   const performWTAction = (type: WTEventType, time: number, isPlaying: boolean) => {
     const eventData: WTEventData = {
@@ -152,27 +161,12 @@ export default function WTHostPage({
           </div>
 
           {/* Viewers List (Mock) */}
-          <div className="pt-4 border-t border-border">
-            <h3 className="font-semibold mb-3">Viewers ({userCount})</h3>
-            <div className="flex flex-wrap gap-2">
-              {isLoggedIn && user && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-sm">
-                  <span>{user.username} (You)</span>
-                </div>
-              )}
-              {Array.from({
-                length: userCount,
-              }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm"
-                >
-                  <div className="w-6 h-6 rounded-full bg-muted-foreground/30" />
-                  <span>Guest {i + 1}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ViewersList 
+            userCount={userCount}
+            users={wtUsers}
+            user={user}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>

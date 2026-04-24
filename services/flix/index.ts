@@ -8,7 +8,11 @@ import {
   FlixSeries,
   FlixSeriesSchema,
   FlixTypeMap,
+  FlixUser,
 } from "@/types/flix";
+import { WTUserEvent } from "@/types/watch-together";
+import { FetchResponse } from "@/types";
+import typedFetch from "@/lib/typed-fetch";
 
 const FLIX_API_BASE = "http://localhost:8000/api/";
 
@@ -143,4 +147,19 @@ export async function fetchFlixGenres(): Promise<FlixGenre[]> {
   }
 
   return response.json() || [];
+}
+
+export async function fetchUsers(users: WTUserEvent[]): Promise<FlixUser[]> {
+  const params = new URLSearchParams();
+
+  users.forEach((u) => params.append("ids", u.userId));
+
+  const response = await typedFetch<FetchResponse<FlixUser[]>>(`/api/users?${params.toString()}`);
+
+  if (!response.ok) {
+    console.error("Failed to fetch user details");
+    return [];
+  }
+
+  return response.data;
 }
