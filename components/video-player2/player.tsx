@@ -156,6 +156,19 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     // ── Playback ────────────────────────────────────────────────────────────
     const handlePlayPause = () => setIsPlaying((prev) => !prev);
 
+    const skipBy = (delta: number) => {
+      const video = playerRef.current;
+      if (!video) return;
+      const dur = video.duration || 0;
+      const newTime = Math.max(0, Math.min(dur, video.currentTime + delta));
+      video.currentTime = newTime;
+      setCurrentTime(newTime);
+      if (isFinite(dur) && dur > 0) setProgress((newTime / dur) * 100);
+    };
+
+    const handleSkipBackward = () => skipBy(-10);
+    const handleSkipForward = () => skipBy(10);
+
     // ── Click / double-click (mouse) ────────────────────────────────────────
     const handlePlayerClick = () => {
       if (clickTimerRef.current) return;
@@ -486,6 +499,8 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
           onProgressChange={handleProgressChange}
           isPlaying={isPlaying}
           onPlayPause={handlePlayPause}
+          onSkipBackward={handleSkipBackward}
+          onSkipForward={handleSkipForward}
           isMuted={isMuted}
           currentVolume={currentVolume}
           onMuteToggle={handleMuteToggle}

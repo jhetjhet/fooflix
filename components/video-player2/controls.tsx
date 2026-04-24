@@ -6,7 +6,7 @@
  * the Settings menu, and the fullscreen toggle.
  */
 
-import { Maximize, Minimize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { FastForward, Maximize, Minimize2, Pause, Play, Rewind, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import type { FlixSubtitle } from "@/types/flix";
@@ -24,6 +24,8 @@ interface PlayerControlsProps {
   // Playback
   isPlaying: boolean;
   onPlayPause: () => void;
+  onSkipBackward: () => void;
+  onSkipForward: () => void;
 
   // Volume
   isMuted: boolean;
@@ -58,6 +60,8 @@ export function PlayerControls({
   onProgressChange,
   isPlaying,
   onPlayPause,
+  onSkipBackward,
+  onSkipForward,
   isMuted,
   currentVolume,
   onMuteToggle,
@@ -98,6 +102,16 @@ export function PlayerControls({
       {/* Control Buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {/* Skip backward 10 s */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSkipBackward}
+            className="text-white hover:text-white hover:bg-white/20"
+          >
+            <Rewind className="size-5" />
+          </Button>
+
           {/* Play / Pause */}
           <Button
             variant="ghost"
@@ -110,6 +124,16 @@ export function PlayerControls({
             ) : (
               <Play className="size-5" />
             )}
+          </Button>
+
+          {/* Skip forward 10 s */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSkipForward}
+            className="text-white hover:text-white hover:bg-white/20"
+          >
+            <FastForward className="size-5" />
           </Button>
 
           {/* Mute toggle + volume slider */}
