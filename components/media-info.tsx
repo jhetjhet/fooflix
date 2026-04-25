@@ -112,12 +112,7 @@ export default function MediaInfo({
 
       {/* Actions */}
       <div className="flex flex-col gap-3 pt-4">
-        <Button className="w-full gap-2" size="lg">
-          <Play className="size-5 fill-current" />
-          Watch Now
-        </Button>
-
-        {isLoggedIn && (
+        {(isLoggedIn && !isTV) && (
           <Button 
             variant="outline" 
             className="w-full 

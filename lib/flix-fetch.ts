@@ -1,3 +1,5 @@
+"use server";
+
 import { FlixUser, FlixUserSchema, JWTResponse, JWTResponseSchema } from "@/types/flix";
 import { cookies, headers } from "next/headers";
 

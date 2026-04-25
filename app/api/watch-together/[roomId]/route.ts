@@ -1,11 +1,11 @@
 import { resFail } from "@/lib/response-wrappers";
 import { FetchResponse } from "@/types";
-import { FlixUser, FlixUserSchema } from "@/types/flix";
+import { FlixUser } from "@/types/flix";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request, { params }: { params: { roomId: string } }): Promise<NextResponse<FetchResponse<FlixUser>>> {
+export async function GET(req: Request, context: { params: Promise<{ roomId: string }> }): Promise<NextResponse<FetchResponse<FlixUser>>> {
   try {
-    const { roomId } = params;
+    const { roomId } = await context.params;
 
     const response = await fetch(`${process.env.NODE_API_URL}/watch-together/${roomId}/`);
 
