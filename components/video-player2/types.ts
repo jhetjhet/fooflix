@@ -32,6 +32,8 @@ export interface VideoPlayer2Props {
   posterUrl?: string;
   className?: string;
   subtitles?: FlixSubtitle[];
+  /** When true, hides seek/playback controls and disables their shortcuts. Only volume, captions, PiP, and fullscreen remain. */
+  isLimited?: boolean;
 
   // ReactPlayer – playback state
   src?: ReactPlayerProps["src"];

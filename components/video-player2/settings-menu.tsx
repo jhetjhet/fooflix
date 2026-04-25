@@ -29,6 +29,7 @@ interface SettingsMenuProps {
   subtitles: FlixSubtitle[];
   activeCaption: number | null;
   onCaptionChange: (idStr: string) => void;
+  isLimited?: boolean;
 }
 
 export function SettingsMenu({
@@ -39,6 +40,7 @@ export function SettingsMenu({
   subtitles,
   activeCaption,
   onCaptionChange,
+  isLimited = false,
 }: SettingsMenuProps) {
   return (
     <DropdownMenu>
@@ -58,19 +60,22 @@ export function SettingsMenu({
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {/* Playback Speed */}
-        <DropdownMenuLabel>Playback Speed</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={String(currentPlaybackRate)}
-          onValueChange={(v) => onPlaybackRateChange(Number(v))}
-        >
-          {PLAYBACK_SPEEDS.map((speed) => (
-            <DropdownMenuRadioItem key={speed} value={String(speed)}>
-              {speed === 1 ? "Normal" : `${speed}×`}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-
-        <DropdownMenuSeparator />
+        {!isLimited && (
+          <>
+            <DropdownMenuLabel>Playback Speed</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={String(currentPlaybackRate)}
+              onValueChange={(v) => onPlaybackRateChange(Number(v))}
+            >
+              {PLAYBACK_SPEEDS.map((speed) => (
+                <DropdownMenuRadioItem key={speed} value={String(speed)}>
+                  {speed === 1 ? "Normal" : `${speed}×`}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
         {/* Picture in Picture */}
         <DropdownMenuCheckboxItem

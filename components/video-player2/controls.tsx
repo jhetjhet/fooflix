@@ -52,6 +52,9 @@ interface PlayerControlsProps {
   // Fullscreen
   isFullscreen: boolean;
   onFullscreen: () => void;
+
+  // Limited mode
+  isLimited?: boolean;
 }
 
 export function PlayerControls({
@@ -78,6 +81,7 @@ export function PlayerControls({
   onCaptionChange,
   isFullscreen,
   onFullscreen,
+  isLimited = false,
 }: PlayerControlsProps) {
   return (
     <div
@@ -89,52 +93,60 @@ export function PlayerControls({
       onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* Progress Bar */}
-      <div className="mb-4">
-        <Slider
-          value={[progress]}
-          max={100}
-          step={0.1}
-          onValueChange={onProgressChange}
-          className="cursor-pointer"
-        />
-      </div>
+      {!isLimited && (
+        <div className="mb-4">
+          <Slider
+            value={[progress]}
+            max={100}
+            step={0.1}
+            onValueChange={onProgressChange}
+            className="cursor-pointer"
+          />
+        </div>
+      )}
 
       {/* Control Buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* Skip backward 10 s */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSkipBackward}
-            className="text-white hover:text-white hover:bg-white/20"
-          >
-            <Rewind className="size-5" />
-          </Button>
+          {!isLimited && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSkipBackward}
+              className="text-white hover:text-white hover:bg-white/20"
+            >
+              <Rewind className="size-5" />
+            </Button>
+          )}
 
           {/* Play / Pause */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onPlayPause}
-            className="text-white hover:text-white hover:bg-white/20"
-          >
-            {isPlaying ? (
-              <Pause className="size-5" />
-            ) : (
-              <Play className="size-5" />
-            )}
-          </Button>
+          {!isLimited && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onPlayPause}
+              className="text-white hover:text-white hover:bg-white/20"
+            >
+              {isPlaying ? (
+                <Pause className="size-5" />
+              ) : (
+                <Play className="size-5" />
+              )}
+            </Button>
+          )}
 
           {/* Skip forward 10 s */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSkipForward}
-            className="text-white hover:text-white hover:bg-white/20"
-          >
-            <FastForward className="size-5" />
-          </Button>
+          {!isLimited && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSkipForward}
+              className="text-white hover:text-white hover:bg-white/20"
+            >
+              <FastForward className="size-5" />
+            </Button>
+          )}
 
           {/* Mute toggle + volume slider */}
           <Button
@@ -161,13 +173,17 @@ export function PlayerControls({
           </div>
 
           {/* Time label */}
-          <span className="text-sm text-white/80 ml-2 tabular-nums">
-            {formatTime(currentTime)} / {formatTime(duration)}
-          </span>
+          {!isLimited && (
+            <span className="text-sm text-white/80 ml-2 tabular-nums">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-white/80 mr-2">{title}</span>
+          {!isLimited && (
+            <span className="text-sm text-white/80 mr-2">{title}</span>
+          )}
 
           {/* Settings dropdown */}
           <SettingsMenu
@@ -178,6 +194,7 @@ export function PlayerControls({
             subtitles={subtitles}
             activeCaption={activeCaption}
             onCaptionChange={onCaptionChange}
+            isLimited={isLimited}
           />
 
           {/* Fullscreen toggle */}
