@@ -100,7 +100,7 @@ export async function fetchFlixMovie(id: string): Promise<FlixMovie> {
   return dataRes.data;
 }
 
-export async function flixSeries(id: string): Promise<FlixSeries> {
+export async function fetchFlixSeries(id: string): Promise<FlixSeries> {
   const data = await fetchFlixDetails({ type: "series", id });
 
   const dataRes = FlixSeriesSchema.safeParse(data);

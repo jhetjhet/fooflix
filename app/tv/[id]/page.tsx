@@ -1,32 +1,29 @@
-"use client";
-
-import { use } from "react";
 import { notFound } from "next/navigation";
-import useTMDBFlix from "@/hooks/use-tmdb-flix";
 import { unifiedSeries } from "@/services/unified";
 import MediaUnifiedDetailPage from "@/components/media-unified-detail-page";
+import { fetchFlixSeries } from "@/services/flix";
+import { getTMDBDetails } from "@/services/tmdb";
 
 interface TVDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function TVDetailPage({ params }: TVDetailPageProps) {
-  const { id } = use(params);
-  const tvId = parseInt(id);
+export default async function TVDetailPage({ params }: TVDetailPageProps) {
+  const { id } = await params;
 
-  const { tmdb, flix, isLoading, error } = useTMDBFlix("series", tvId);
+  const flixSeries = await fetchFlixSeries(id);
+  const tmdbSeries = await getTMDBDetails({
+    type: "tv",
+    id: parseInt(id),
+  });
 
-  if (error) {
+  const uSeries = unifiedSeries(tmdbSeries, flixSeries);
+
+  if (!uSeries) {
     notFound();
   }
 
-  let unifiedSeriesData = null;
-
-  if (tmdb && flix) {
-    unifiedSeriesData = unifiedSeries(tmdb, flix);
-  }
-
   return (
-    <MediaUnifiedDetailPage media={unifiedSeriesData} isLoading={isLoading} />
+    <MediaUnifiedDetailPage media={uSeries} />
   );
 }

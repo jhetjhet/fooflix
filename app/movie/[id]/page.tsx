@@ -1,32 +1,29 @@
-"use client";
-
-import { use } from "react";
 import MediaUnifiedDetailPage from "@/components/media-unified-detail-page";
 import { notFound } from "next/navigation";
-import useTMDBFlix from "@/hooks/use-tmdb-flix";
 import { unifiedMovie } from "@/services/unified";
+import { fetchFlixMovie } from "@/services/flix";
+import { getTMDBDetails } from "@/services/tmdb";
 
 interface MovieDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function MovieDetailPage({ params }: MovieDetailPageProps) {
-  const { id } = use(params);
-  const movieId = parseInt(id);
+export default async function MovieDetailPage({ params }: MovieDetailPageProps) {
+  const { id } = await params;
 
-  const { tmdb, flix, isLoading, error } = useTMDBFlix("movie", movieId);
+  const flixMovie = await fetchFlixMovie(id);
+  const tmdbMovie = await getTMDBDetails({
+    type: "movie",
+    id: parseInt(id),
+  });
 
-  if (error) {
+  const uMovie = unifiedMovie(tmdbMovie, flixMovie);
+
+  if (!uMovie) {
     notFound();
   }
 
-  let unifiedMovieData = null;
-
-  if (tmdb && flix) {
-    unifiedMovieData = unifiedMovie(tmdb, flix);
-  }
-
   return (
-    <MediaUnifiedDetailPage media={unifiedMovieData} isLoading={isLoading} />
+    <MediaUnifiedDetailPage media={uMovie} />
   );
 }
