@@ -1,3 +1,5 @@
+"use client";
+
 import { getBackdropUrl } from "@/services/tmdb";
 import { TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
 import { VideoPlayer } from "./video-player";

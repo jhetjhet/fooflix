@@ -52,6 +52,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
       onDurationChange,
       onSeek,
       subtitles = [],
+      isLimited = false,
     }: VideoPlayer2Props,
     ref: React.ForwardedRef<VideoPlayer2Handle>,
   ) {
@@ -171,6 +172,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
 
     // ── Click / double-click (mouse) ────────────────────────────────────────
     const handlePlayerClick = () => {
+      if (isLimited) return;
       if (clickTimerRef.current) return;
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = null;
@@ -339,6 +341,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
         case " ":
         case "k":
         case "K":
+          if (isLimited) break;
           e.preventDefault();
           handlePlayPause();
           break;
@@ -353,22 +356,30 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
           handleMuteToggle();
           break;
         case "ArrowLeft":
-          e.preventDefault();
-          seekBy(-5);
+          if (!isLimited) {
+            e.preventDefault();
+            seekBy(-5);
+          }
           break;
         case "ArrowRight":
-          e.preventDefault();
-          seekBy(5);
+          if (!isLimited) {
+            e.preventDefault();
+            seekBy(5);
+          }
           break;
         case "j":
         case "J":
-          e.preventDefault();
-          seekBy(-10);
+          if (!isLimited) {
+            e.preventDefault();
+            seekBy(-10);
+          }
           break;
         case "l":
         case "L":
-          e.preventDefault();
-          seekBy(10);
+          if (!isLimited) {
+            e.preventDefault();
+            seekBy(10);
+          }
           break;
         case "ArrowUp":
           e.preventDefault();
@@ -388,7 +399,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
           break;
         default:
           // 0–9: jump to that tenth of the video
-          if (/^[0-9]$/.test(e.key) && video) {
+          if (!isLimited && /^[0-9]$/.test(e.key) && video) {
             e.preventDefault();
             const dur = video.duration || 0;
             const newTime = (parseInt(e.key) / 10) * dur;
@@ -517,6 +528,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
           onCaptionChange={handleCaptionChange}
           isFullscreen={isFullscreen}
           onFullscreen={handleFullscreen}
+          isLimited={isLimited}
         />
       </div>
     );

@@ -15,11 +15,27 @@ type WTEventState = {
   data: WTEventData;
 };
 
-export default function useWTControls(roomId: string) {
+type WTControlsReturn = {
+  syncState: WTEventData | null;
+  eventState: WTEventState | null;
+  roomState: WTRoomState | null;
+  users: WTUserEvent[];
+  newUser: WTUserEvent | null;
+  userLeft: WTUserEvent | null;
+  socketSyncRequesterId: string | null;
+  emitEvent: (event: string, ...args: any) => void;
+  emitWTEvent: (type: WTEventType, data: WTEventData) => void;
+};
+
+export default function useWTControls(roomId: string): WTControlsReturn {
   const [eventState, setEventState] = useState<WTEventState | null>(null);
   const [syncState, setSyncState] = useState<WTEventData | null>(null);
   const [roomState, setRoomState] = useState<WTRoomState | null>(null);
   const [users, setUsers] = useState<WTUserEvent[]>([]);
+  const [newUser, setNewUser] = useState<WTUserEvent | null>(null);
+  const [userLeft, setUserLeft] = useState<WTUserEvent | null>(null);
+
+  const [socketSyncRequesterId, setSocketSyncRequesterId] = useState<string | null>(null);
 
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
 
@@ -75,6 +91,7 @@ export default function useWTControls(roomId: string) {
       const parsed = WTUserEventSchema.safeParse(data);
 
       if (parsed.success) {
+        setNewUser(parsed.data);
         const existingUser = users.find((u) => u.userId === parsed.data.userId);
         if (!existingUser) {
           setUsers((prev) => [...prev, parsed.data]);
@@ -86,6 +103,7 @@ export default function useWTControls(roomId: string) {
       const parsed = WTUserEventSchema.safeParse(data);
 
       if (parsed.success) {
+        setUserLeft(parsed.data);
         setUsers((prev) => prev.filter((u) => u.userId !== parsed.data.userId));
       }
     });
@@ -98,6 +116,10 @@ export default function useWTControls(roomId: string) {
       }
     });
 
+    socket.on("sync_request", (data: { targetSocketId: string }) => {
+      setSocketSyncRequesterId(data.targetSocketId);
+    });
+
     return () => {
       socket.off("connect");
       socket.off("room_joined");
@@ -108,6 +130,7 @@ export default function useWTControls(roomId: string) {
       socket.off("user_joined");
       socket.off("user_left");
       socket.off("users");
+      socket.off("sync_request");
       socket.disconnect();
     };
   }, [roomId]);
@@ -117,6 +140,9 @@ export default function useWTControls(roomId: string) {
     eventState,
     roomState,
     users,
+    newUser,
+    userLeft,
+    socketSyncRequesterId,
     emitEvent,
     emitWTEvent,
   };

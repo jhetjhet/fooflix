@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  Star,
-  Clock,
-  Calendar,
-} from "lucide-react";
+import { Star, Clock, Calendar } from "lucide-react";
 import { CastList } from "@/components/cast-list";
 import { getBackdropUrl } from "@/services/tmdb";
 import WatchTogetherHeader from "@/components/media-page/watch-together-header";
@@ -16,6 +12,16 @@ import { WTEventDataSchema, WTRoom } from "@/types/watch-together";
 import { useAuthContext } from "@/context/authentication";
 import useWTUserHydrates from "@/hooks/use-wt-user-hydrates";
 import ViewersList from "@/components/media-page/viewers-list";
+import { Button } from "@/components/ui/button";
+import WTPlayerLock from "@/components/media-page/wt-player-lock";
+import useWTStatus from "@/hooks/use-wt-status";
+
+// sync, host disconnected, out of sync
+
+type WTClientOverlay = {
+  show: boolean; 
+  message?: string;
+}
 
 interface WTClientPageProps {
   movie: UnifiedMovie;
@@ -28,26 +34,40 @@ export default function WTClientPage({
 }: WTClientPageProps) {
   const { user } = useAuthContext();
   const vidPlayerRef = useRef<VideoPlayer2Handle>(null);
+  const lastSyncTimeRef = useRef(0);
 
   const [shareUrl, setShareUrl] = useState("");
 
-  const { 
+  const {
     syncState,
     eventState,
     users,
+    userLeft,
+    newUser,
   } = useWTControls(roomDetails.roomId);
 
   const {
     isLoading,
-    hydratedUsers: wtUsers,
+    hydratedUsers:
+    wtUsers
   } = useWTUserHydrates(users, user);
+
+  const {
+    hasUserInteracted,
+    showOverlay,
+    overlayMessage,
+    showJoinButton,
+    doManualPlay,
+  } = useWTStatus(syncState, userLeft, newUser);
 
   const userCount = users?.length || 0;
 
   useEffect(() => {
     if (!roomDetails?.roomId) return;
 
-    setShareUrl(`${window.location.origin}/watch-together/movie/${roomDetails.roomId}`);
+    setShareUrl(
+      `${window.location.origin}/watch-together/movie/${roomDetails.roomId}`,
+    );
   }, [roomDetails?.roomId]);
 
   useEffect(() => {
@@ -62,6 +82,7 @@ export default function WTClientPage({
 
     const { time = 0, serverTime = 0, isPlaying } = eventRes.data;
 
+    lastSyncTimeRef.current = serverTime;
 
     const now = Date.now();
     const latencyMs = now - serverTime!;
@@ -72,18 +93,18 @@ export default function WTClientPage({
 
     if (Math.abs(drift) < 0.3) {
       // ignore (natural variation)
-    }
-    else if (Math.abs(drift) < 1.5) {
+    } else if (Math.abs(drift) < 1.5) {
       // smooth correction
       vidPlayerRef.current?.setPlaybackRate(drift > 0 ? 1.05 : 0.95);
-    }
-    else {
+    } else {
       // big desync → hard seek
       vidPlayerRef.current?.seekTo(projectedTime);
     }
 
-    vidPlayerRef.current?.setPaused(!isPlaying);
-  }, [syncState]);
+    if (hasUserInteracted) {
+      vidPlayerRef.current?.setPaused(!isPlaying);
+    }
+  }, [syncState, hasUserInteracted]);
 
   useEffect(() => {
     if (!eventState) return;
@@ -99,16 +120,18 @@ export default function WTClientPage({
 
     if (type === "play") {
       vidPlayerRef.current?.setPaused(false);
-    }
-    else if (type === "pause") {
+    } else if (type === "pause") {
       vidPlayerRef.current?.setPaused(true);
-    }
-    else if (type === "seek") {
+    } else if (type === "seek") {
       const { time = 0 } = eventRes.data;
 
       vidPlayerRef.current?.seekTo(time);
     }
   }, [eventState]);
+
+  useEffect(() => {
+    vidPlayerRef.current?.setPaused(showOverlay);
+  }, [showOverlay]);
 
   return (
     <div className="container mx-auto px-4 -mt-20 relative z-10">
@@ -123,14 +146,21 @@ export default function WTClientPage({
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Column - Video Player */}
         <div className="flex-1 space-y-6 min-w-0">
-          <VideoPlayer2
-            ref={vidPlayerRef}
-            title={movie.title}
-            playbackRate={1}
-            posterUrl={getBackdropUrl(movie.backdrop_path, "w1280")}
-            src={movie.video_url || undefined}
-          />
-
+          <WTPlayerLock
+            showOverlay={showOverlay}
+            overlayMessage={overlayMessage}
+            showJoinButton={showJoinButton}
+            onJoin={doManualPlay}
+          >
+            <VideoPlayer2
+              ref={vidPlayerRef}
+              title={movie.title}
+              playbackRate={1}
+              posterUrl={getBackdropUrl(movie.backdrop_path, "w1280")}
+              src={movie.video_url || undefined}
+              isLimited
+            />
+          </WTPlayerLock>
           {/* Cast */}
           {movie.credits?.cast && movie.credits.cast.length > 0 && (
             <CastList cast={movie.credits.cast} />
@@ -192,7 +222,7 @@ export default function WTClientPage({
           </div>
 
           {/* Viewers List (Mock) */}
-          <ViewersList 
+          <ViewersList
             userCount={userCount}
             users={wtUsers}
             user={user}
@@ -203,4 +233,3 @@ export default function WTClientPage({
     </div>
   );
 }
-
