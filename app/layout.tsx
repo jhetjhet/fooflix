@@ -6,6 +6,8 @@ import { AuthProvider } from "@/context/authentication";
 import { fetchFlixUser } from "@/lib/flix-fetch";
 import { Toaster } from "@/components/ui/toaster";
 
+export const dynamic = "force-dynamic";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
