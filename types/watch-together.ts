@@ -36,7 +36,7 @@ export const WTEventDataSchema = zod.object({
   isPlaying: zod.boolean().optional(),
   serverTime: zod.number(),
   targetSocketId: zod.string().optional(),
-  request: zod.boolean().optional(),
+  isRequest: zod.boolean().optional(),
 });
 
 export type WTUserEvent = zod.infer<typeof WTUserEventSchema>;

@@ -34,6 +34,7 @@ export default function WTHostPage({
   const { 
     roomState, 
     users,
+    socketSyncRequesterId,
     emitWTEvent,
   } = useWTControls(roomDetails.roomId);
 
@@ -54,6 +55,19 @@ export default function WTHostPage({
 
     emitWTEvent(type, eventData);
   }
+
+  useEffect(() => {
+    if (!roomDetails?.roomId || !socketSyncRequesterId) return;
+
+    emitWTEvent("sync", {
+      roomId: roomDetails.roomId,
+      time: vidPlayerRef.current?.getCurrentTime() ?? 0,
+      isPlaying: !vidPlayerRef.current?.isPaused(),
+      serverTime: Date.now(),
+      isRequest: true,
+      targetSocketId: socketSyncRequesterId,
+    });
+  }, [socketSyncRequesterId]);
 
   useEffect(() => {
     if (!roomDetails?.roomId) return;
