@@ -16,7 +16,7 @@ export async function flixFetch(
   const jwtResult = JWTResponseSchema.safeParse(sessionParse);
 
   if(!jwtResult.success) {
-    throw new Error("Invalid session data");
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const session: JWTResponse = jwtResult.data;
@@ -38,12 +38,12 @@ export async function fetchFlixUser(): Promise<FlixUser | null> {
   try {
     const response = await flixFetch("/auth/users/me/");
 
+    const responseData = await response.json();
+
     if (!response.ok) {
-      console.error(`Failed to fetch user: ${response.status}`);
+      console.error("Failed to fetch user:", responseData);
       return null;
     }
-
-    const responseData = await response.json();
 
     const userResult = FlixUserSchema.safeParse(responseData);
 
