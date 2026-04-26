@@ -53,7 +53,7 @@ export default function useWTControls(roomId: string): WTControlsReturn {
   };
 
   useEffect(() => {
-    const socket = io("http://localhost/wtc", {
+    const socket = io(`${process.env.NEXT_PUBLIC_NODE_ENDPOINT}/wtc`, {
       path: "/node/socket.io",
       withCredentials: true,
       transports: ["websocket", "polling"],

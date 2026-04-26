@@ -14,7 +14,7 @@ import { WTUserEvent } from "@/types/watch-together";
 import { FetchResponse } from "@/types";
 import typedFetch from "@/lib/typed-fetch";
 
-const FLIX_API_BASE = "http://localhost:8000/api/";
+const FLIX_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL;
 
 export const DEFAULT_FLIX_MOVIE: FlixMovie = {
   type: "movie",
