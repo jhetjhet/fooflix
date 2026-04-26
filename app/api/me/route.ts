@@ -1,5 +1,5 @@
 import { resFail } from "@/lib/response-wrappers";
-import { flixFetch } from "@/lib/flix-fetch";
+import { flixFetch } from "@/lib/flix-api.server";
 import { FetchResponse } from "@/types";
 import { FlixUser, FlixUserSchema } from "@/types/flix";
 import { NextResponse } from "next/server";

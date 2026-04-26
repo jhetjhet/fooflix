@@ -1,12 +1,14 @@
 "use server";
 
-import { FlixUser, FlixUserSchema, JWTResponse, JWTResponseSchema } from "@/types/flix";
+import { FlixMediaType, FlixMovie, FlixResponse, FlixSeries, FlixTypeMap, FlixUser, FlixUserSchema, JWTResponse, JWTResponseSchema } from "@/types/flix";
 import { cookies, headers } from "next/headers";
+import typedFetch from "./typed-fetch";
+
+const FLIX_API_BASE = `${process.env.DJANGO_API_URL}/api/`;
 
 export async function flixFetch(
   endpoint: string, 
   options: RequestInit = {},
-  baseUrl: string = process.env.DJANGO_API_URL || ""
 ) {
   const allHeaders = await headers();
   const cookieStore = await cookies();
@@ -28,7 +30,7 @@ export async function flixFetch(
     respHeaders.set("Authorization", `Bearer ${authToken}`);
   }
 
-  return fetch(`${baseUrl}${endpoint}`, {
+  return fetch(`${process.env.DJANGO_API_URL}${endpoint}`, {
     ...options,
     headers: respHeaders,
   });
@@ -38,12 +40,12 @@ export async function fetchFlixUser(): Promise<FlixUser | null> {
   try {
     const response = await flixFetch("/auth/users/me/");
 
-    const responseData = await response.json();
-
     if (!response.ok) {
-      console.error("Failed to fetch user:", responseData);
+      console.error("Failed to fetch user:", await response.text());
       return null;
     }
+
+    const responseData = await response.json();
 
     const userResult = FlixUserSchema.safeParse(responseData);
 
@@ -54,7 +56,18 @@ export async function fetchFlixUser(): Promise<FlixUser | null> {
     
     return userResult.data;
   } catch (error: unknown) {
-    console.error(error);
     return null;
   }
 };
+
+export async function fetchFlixItems<T extends FlixMediaType>(
+  type: T = "all" as T,
+  params: Record<string, string> = {},
+): Promise<FlixResponse<FlixTypeMap[T]>> {
+  const searchParams = new URLSearchParams({
+    ...params,
+  });
+  const url = `${FLIX_API_BASE}${type}?${searchParams}`;
+
+  return typedFetch<FlixResponse<FlixTypeMap[T]>>(url);
+}

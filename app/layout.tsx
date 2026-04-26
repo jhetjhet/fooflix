@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Navbar } from "@/components/navbar";
 import { AuthProvider } from "@/context/authentication";
-import { fetchFlixUser } from "@/lib/flix-fetch";
+import { fetchFlixUser } from "@/lib/flix-api.server";
 import { Toaster } from "@/components/ui/toaster";
 
 export const dynamic = "force-dynamic";

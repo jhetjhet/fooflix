@@ -1,5 +1,5 @@
 import MediaPageContainer from "@/components/media-page/container";
-import { fetchFlixUser, flixFetch } from "@/lib/flix-fetch";
+import { fetchFlixUser, flixFetch } from "@/lib/flix-api.server";
 import { fetchFlixMovie } from "@/services/flix";
 import { getTMDBDetails } from "@/services/tmdb";
 import { unifiedMovie } from "@/services/unified";

@@ -131,6 +131,7 @@ export type FlixMediaType = "movie" | "series" | "all";
 export type FlixTypeMap = {
   movie: FlixMovie;
   series: FlixSeries;
+  all: FlixMovie | FlixSeries;
 };
 
 export type FlixGenre = z.infer<typeof FlixGenreSchema>;

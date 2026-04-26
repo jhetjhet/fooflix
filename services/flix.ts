@@ -14,7 +14,7 @@ import { WTUserEvent } from "@/types/watch-together";
 import { FetchResponse } from "@/types";
 import typedFetch from "@/lib/typed-fetch";
 
-const FLIX_API_BASE = process.env.NEXT_PUBLIC_DJANGO_API_URL;
+const FLIX_API_BASE = `${process.env.DJANGO_API_URL}/api/`;
 
 export const DEFAULT_FLIX_MOVIE: FlixMovie = {
   type: "movie",
@@ -43,25 +43,6 @@ export const DEFAULT_FLIX_SERIES: FlixSeries = {
   date_upload: "",
   genres: [],
 };
-
-export async function fetchFlixItems<T>(
-  type: FlixMediaType = "all",
-  params: Record<string, string> = {},
-): Promise<FlixResponse<T>> {
-  const searchParams = new URLSearchParams({
-    // api_key: TMDB_API_KEY,
-    ...params,
-  });
-  const url = `${FLIX_API_BASE}${type}?${searchParams}`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Flix API error: ${response.status}`);
-  }
-
-  return response.json();
-}
 
 export async function fetchFlixDetails<T extends keyof FlixTypeMap>({
   type,
@@ -135,18 +116,6 @@ export function flixToMediaItem(flix: FlixMovie | FlixSeries): MediaItem {
     mediaType: mediaType,
     genreIds: genreIds,
   };
-}
-
-export async function fetchFlixGenres(): Promise<FlixGenre[]> {
-  const url = `${FLIX_API_BASE}genre/list/`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Flix API error: ${response.status}`);
-  }
-
-  return response.json() || [];
 }
 
 export async function fetchUsers(users: WTUserEvent[]): Promise<FlixUser[]> {

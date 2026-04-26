@@ -1,7 +1,7 @@
 "use server";
 
 import { handleResponse, resFail, resOk, withErrorHandling } from "@/lib/response-wrappers";
-import { flixFetch } from "@/lib/flix-fetch";
+import { flixFetch } from "@/lib/flix-api.server";
 import { FetchResponse } from "@/types";
 import {
   FlixEpisodeForm,

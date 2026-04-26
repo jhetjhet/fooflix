@@ -7,12 +7,13 @@ import {
 } from "@/services/tmdb";
 import type { MediaItem } from "@/types/tmdb";
 import { FlixMediaType, FlixMovie, FlixSeries } from "@/types/flix";
-import { fetchFlixItems, flixToMediaItem } from "@/services/flix";
+import { flixToMediaItem } from "@/services/flix";
+import { fetchFlixItems } from "@/lib/flix-api.server";
 
 export const revalidate = 60;
 
 const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
-  const data = await fetchFlixItems<FlixMovie | FlixSeries>("all", {
+  const data = await fetchFlixItems("all", {
     ordering: "-date_upload",
     page: "1",
     page_size: "5",
@@ -41,7 +42,7 @@ const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
 const fetchFlixMediaItems = async (
   type: FlixMediaType = "movie",
 ): Promise<MediaItem[]> => {
-  const data = await fetchFlixItems<FlixMovie | FlixSeries>(type);
+  const data = await fetchFlixItems(type);
 
   if (!data?.results) return [];
   return data.results.map((item) => flixToMediaItem(item));
