@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/select";
 import { getYearOptions } from "@/lib/mock-data";
 import useSWR from "swr";
-import { fetchFlixGenres } from "@/services/flix";
 import { FlixBrowseFilters, FlixGenre } from "@/types/flix";
+import { clientFetchFlixGenres } from "@/lib/flix-api.client";
 
 interface BrowseFiltersProps {
   filters: FlixBrowseFilters;
@@ -38,12 +38,11 @@ export function BrowseFiltersComponent({
   const yearOptions = getYearOptions();
   const [searchValue, setSearchValue] = useState(filters.query);
 
+  const defferredSearchValue = useDeferredValue(searchValue);
+
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      onFiltersChange({ query: searchValue, page: 1 });
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [searchValue]);
+    onFiltersChange({ query: defferredSearchValue, page: 1 });
+  }, [defferredSearchValue]);
 
   const hasActiveFilters =
     filters.query ||
@@ -52,7 +51,7 @@ export function BrowseFiltersComponent({
     filters.sort_by !== "-date_upload" ||
     filters.year !== null;
   
-  const { data: flixGenres = [] } = useSWR<FlixGenre[]>("genres", fetchFlixGenres);
+  const { data: flixGenres = [] } = useSWR<FlixGenre[]>("genres", clientFetchFlixGenres);
 
   return (
     <div className="flex flex-col gap-4">

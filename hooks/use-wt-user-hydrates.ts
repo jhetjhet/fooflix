@@ -1,4 +1,4 @@
-import { fetchUsers } from "@/services/flix";
+import { clientFetchFlixUsers } from "@/lib/flix-api.client";
 import { FlixUser } from "@/types/flix";
 import { WTUserEvent } from "@/types/watch-together";
 import { useMemo } from "react";
@@ -10,7 +10,7 @@ export default function useWTUserHydrates(
 ) {
   const { data: detailedUsers, isLoading } = useSWR(
     wtUsers ? ["users", wtUsers] : null,
-    ([_, wtUsers]) => fetchUsers(wtUsers),
+    ([_, wtUsers]) => clientFetchFlixUsers(wtUsers),
   );
 
   const detailedUsersMap = useMemo(() => {

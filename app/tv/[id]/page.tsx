@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { unifiedSeries } from "@/services/unified";
 import MediaUnifiedDetailPage from "@/components/media-unified-detail-page";
-import { fetchFlixSeries } from "@/services/flix";
 import { getTMDBDetails } from "@/services/tmdb";
+import { fetchFlixDetails } from "@/lib/flix-api.server";
 
 interface TVDetailPageProps {
   params: Promise<{ id: string }>;
@@ -11,7 +11,10 @@ interface TVDetailPageProps {
 export default async function TVDetailPage({ params }: TVDetailPageProps) {
   const { id } = await params;
 
-  const flixSeries = await fetchFlixSeries(id);
+  const flixSeries = await fetchFlixDetails({
+    type: "series",
+    id,
+  });
   const tmdbSeries = await getTMDBDetails({
     type: "tv",
     id: parseInt(id),

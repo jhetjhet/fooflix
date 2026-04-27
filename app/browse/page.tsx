@@ -9,18 +9,11 @@ import { MediaGrid } from "@/components/media-grid";
 import {
   getMovieGenres,
   getTVGenres,
-  discoverMovies,
-  discoverTVShows,
-  searchMovies,
-  searchTVShows,
-  searchMulti,
-  movieToMediaItem,
-  tvShowToMediaItem,
-  toMediaItems,
 } from "@/services/tmdb";
-import type { BrowseFilters, MediaItem, TMDBGenre } from "@/types/tmdb";
-import { FlixBrowseFilters, FlixMovie, FlixResponse, FlixSeries } from "@/types/flix";
-import { fetchFlixItems, flixIsSeries, flixToMediaItem } from "@/services/flix";
+import type { MediaItem, TMDBGenre } from "@/types/tmdb";
+import { FlixBrowseFilters, FlixMovie, FlixSeries } from "@/types/flix";
+import { flixToMediaItem } from "@/services/flix";
+import { clientFetchFlixItems } from "@/lib/flix-api.client";
 
 const defaultFilters: FlixBrowseFilters = {
   query: "",
@@ -32,20 +25,20 @@ const defaultFilters: FlixBrowseFilters = {
 };
 
 // Fetcher for genres
-const fetchGenres = async (): Promise<TMDBGenre[]> => {
-  const [movieGenres, tvGenres] = await Promise.all([
-    getMovieGenres(),
-    getTVGenres(),
-  ]);
+// const fetchGenres = async (): Promise<TMDBGenre[]> => {
+//   const [movieGenres, tvGenres] = await Promise.all([
+//     getMovieGenres(),
+//     getTVGenres(),
+//   ]);
 
-  // Merge and deduplicate genres
-  const allGenres = [...movieGenres.genres, ...tvGenres.genres];
-  const uniqueGenres = allGenres.filter(
-    (genre, index, self) => self.findIndex((g) => g.id === genre.id) === index,
-  );
+//   // Merge and deduplicate genres
+//   const allGenres = [...movieGenres.genres, ...tvGenres.genres];
+//   const uniqueGenres = allGenres.filter(
+//     (genre, index, self) => self.findIndex((g) => g.id === genre.id) === index,
+//   );
 
-  return uniqueGenres.sort((a, b) => a.name.localeCompare(b.name));
-};
+//   return uniqueGenres.sort((a, b) => a.name.localeCompare(b.name));
+// };
 
 function BrowseContent() {
   const searchParams = useSearchParams();
@@ -73,16 +66,15 @@ function BrowseContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch genres
-  const { data: genres = [] } = useSWR("browse-genres", fetchGenres);
+  // const { data: genres = [] } = useSWR("browse-genres", fetchGenres);
 
   // Fetch results based on filters
   const fetchResults = useCallback(async () => {
     setIsLoading(true);
     try {
       let items: MediaItem[] = [];
-      let pages = 0;
 
-      const response = await fetchFlixItems<FlixMovie | FlixSeries>(filters.type, {
+      const response = await clientFetchFlixItems(filters.type, {
         page: filters.page.toString(),
         page_size: "42",
         ordering: filters.sort_by,

@@ -1,8 +1,8 @@
-import { fetchFlixDetails } from "@/services/flix";
 import { getTMDBDetails } from "@/services/tmdb";
 import { TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
 import { FlixMediaType, FlixMovie, FlixSeries } from "@/types/flix";
 import useSWR from "swr";
+import { clientFetchFlixDetails } from "@/lib/flix-api.client";
 
 const swrOptions = {
   revalidateOnFocus: false,
@@ -64,7 +64,7 @@ export default function useTMDBFlix<T extends Exclude<FlixMediaType, "all">>(
     mutate: mutateFlixMovie,
   } = useSWR(
     type === "movie" && id ? (["flix", "movie", id] as const) : null,
-    ([, , flixId]) => fetchFlixDetails({ type: "movie", id: flixId.toString() }),
+    ([, , flixId]) => clientFetchFlixDetails({ type: "movie", id: flixId.toString() }),
     swrOptions,
   );
 
@@ -75,7 +75,7 @@ export default function useTMDBFlix<T extends Exclude<FlixMediaType, "all">>(
     mutate: mutateFlixSeries,
   } = useSWR(
     type === "series" && id ? (["flix", "series", id] as const) : null,
-    ([, , flixId]) => fetchFlixDetails({ type: "series", id: flixId.toString() }),
+    ([, , flixId]) => clientFetchFlixDetails({ type: "series", id: flixId.toString() }),
     swrOptions,
   );
 
