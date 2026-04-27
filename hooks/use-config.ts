@@ -3,7 +3,7 @@ import { EnvConfig } from "@/types";
 import useSWR from "swr";
 
 async function fetchConfig(): Promise<EnvConfig> {
-  return typedFetch<EnvConfig>("/api/config");
+  return typedFetch<EnvConfig>("/next-api/config");
 }
 
 export default function useConfig() {
