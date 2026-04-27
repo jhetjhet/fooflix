@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { MediaPagination } from "@/components/media-pagination";
 import { BrowseFiltersComponent } from "@/components/browse-filters";
 import { MediaGrid } from "@/components/media-grid";
 import type { MediaItem } from "@/types/tmdb";
@@ -122,78 +122,27 @@ export default function BrowseContent() {
         />
       </div>
 
+      {/* Pagination Top */}
+      {!isLoading && (
+        <MediaPagination
+          page={filters.page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
+
       {/* Results */}
-      <MediaGrid items={results} isLoading={isLoading} />
+      <div className="my-10">
+        <MediaGrid items={results} isLoading={isLoading} />
+      </div>
 
-      {/* Pagination */}
-      {!isLoading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-10">
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(filters.page - 1)}
-            disabled={filters.page <= 1}
-          >
-            Previous
-          </Button>
-
-          <div className="flex items-center gap-1">
-            {/* First page */}
-            {filters.page > 3 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handlePageChange(1)}
-                >
-                  1
-                </Button>
-                {filters.page > 4 && (
-                  <span className="px-2 text-muted-foreground">...</span>
-                )}
-              </>
-            )}
-
-            {/* Page numbers around current */}
-            {Array.from({ length: 5 }, (_, i) => {
-              const page = filters.page - 2 + i;
-              if (page < 1 || page > totalPages) return null;
-              return (
-                <Button
-                  key={page}
-                  variant={page === filters.page ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handlePageChange(page)}
-                >
-                  {page}
-                </Button>
-              );
-            })}
-
-            {/* Last page */}
-            {filters.page < totalPages - 2 && (
-              <>
-                {filters.page < totalPages - 3 && (
-                  <span className="px-2 text-muted-foreground">...</span>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handlePageChange(totalPages)}
-                >
-                  {totalPages}
-                </Button>
-              </>
-            )}
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(filters.page + 1)}
-            disabled={filters.page >= totalPages}
-          >
-            Next
-          </Button>
-        </div>
+      {/* Pagination Bottom */}
+      {!isLoading && (
+        <MediaPagination
+          page={filters.page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
     </>
   );
