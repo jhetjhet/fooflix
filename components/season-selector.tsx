@@ -11,11 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getTVSeasonDetails, getImageUrl } from "@/services/tmdb";
+import { getImageUrl } from "@/services/tmdb";
 import type { TMDBSeason, TMDBEpisode } from "@/types/tmdb";
 import { cn } from "@/lib/utils";
 import { UnifiedEpisode, UnifiedSeason } from "@/types/unified";
 import { DEFAULT_UNIFIED_EPISODE } from "@/services/unified";
+import { cGetTVSeasonDetails } from "@/lib/tmdb-api.client";
 
 // ─── EpisodeCardSkeleton ──────────────────────────────────────────────────────
 
@@ -126,7 +127,7 @@ export function SeasonSelector({
   // Fetch season details
   const { data: seasonDetails, isLoading } = useSWR(
     `tv-${tvId}-season-${selectedSeason}`,
-    () => getTVSeasonDetails(tvId, selectedSeason),
+    () => cGetTVSeasonDetails(tvId, selectedSeason),
   );
 
   const handleEpisodeClick = (episode: UnifiedEpisode) => {

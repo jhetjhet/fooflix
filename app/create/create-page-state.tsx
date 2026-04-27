@@ -11,10 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  searchMovies,
-  searchTVShows,
-} from "@/services/tmdb";
 import type { TMDBMovie, TMDBTVShow, MediaType } from "@/types/tmdb";
 import SearchResults from "./search-results";
 import {
@@ -24,6 +20,7 @@ import {
 } from "next/navigation";
 import FlixFormManager from "@/components/flix-form-manager";
 import { useAuthContext } from "@/context/authentication";
+import { searchMovies, searchTVShows } from "@/lib/tmdb-api.client";
 
 export default function CreatePageState() {
   const searchParams = useSearchParams();
