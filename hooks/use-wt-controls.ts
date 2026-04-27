@@ -9,6 +9,7 @@ import {
 } from "@/types/watch-together";
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import useConfig from "./use-config";
 
 type WTEventState = {
   type: WTEventType;
@@ -37,6 +38,8 @@ export default function useWTControls(roomId: string): WTControlsReturn {
 
   const [socketSyncRequesterId, setSocketSyncRequesterId] = useState<string | null>(null);
 
+  const config = useConfig();
+
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
 
   const emitEvent = (event: string, ...args: any) => {
@@ -53,8 +56,13 @@ export default function useWTControls(roomId: string): WTControlsReturn {
   };
 
   useEffect(() => {
-    const socket = io(`${process.env.NEXT_PUBLIC_NODE_SOCKET_URL}/wtc`, {
-      path: process.env.NEXT_PUBLIC_NODE_SOCKET_PATH,
+    if (!config?.socketPath || !config?.socketUrl) {
+      console.error("Config not loaded yet");
+      return;
+    }
+
+    const socket = io(`${config?.socketUrl}/wtc`, {
+      path: config?.socketPath,
       withCredentials: true,
       transports: ["websocket", "polling"],
     });
@@ -133,7 +141,7 @@ export default function useWTControls(roomId: string): WTControlsReturn {
       socket.off("sync_request");
       socket.disconnect();
     };
-  }, [roomId]);
+  }, [roomId, config]);
 
   return {
     syncState,

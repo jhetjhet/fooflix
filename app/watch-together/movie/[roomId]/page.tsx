@@ -1,12 +1,12 @@
 import MediaPageContainer from "@/components/media-page/container";
 import { fetchFlixDetails, fetchFlixUser } from "@/lib/flix-api.server";
-import { getTMDBDetails } from "@/services/tmdb";
 import { unifiedMovie } from "@/services/unified";
 import { notFound } from "next/navigation";
 import WTHostPage from "./_components/wt-host-page";
 import WTClientPage from "./_components/wt-client-page";
 import { WTRoom, WTRoomSchema } from "@/types/watch-together";
 import { authFetch } from "@/lib/auth-fetch";
+import { getTMDBDetails } from "@/lib/tmdb-api.server";
 
 async function fetchRoomDetails(roomId: string): Promise<WTRoom> {
   const resp = await authFetch(`${process.env.NODE_API_URL}/watch-together/${roomId}/`);

@@ -9,10 +9,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import useSWR from "swr";
-import { getTVSeasonDetails } from "@/services/tmdb";
 import { cn } from "@/lib/utils";
 import { UnifiedEpisode, UnifiedSeason, UnifiedSeries } from "@/types/unified";
 import { DEFAULT_UNIFIED_EPISODE } from "@/services/unified";
+import { cGetTVSeasonDetails } from "@/lib/tmdb-api.client";
 
 interface FlixFormMediaSeriesProps {
   tv: UnifiedSeries;
@@ -31,7 +31,7 @@ export default function FlixFormMediaSeries({
 }: FlixFormMediaSeriesProps) {
   const { data: seasonDetails, isLoading: loadingEpisodes } = useSWR(
     selectedSeason?.season_number ? [`tv`, tv.id, `season`, selectedSeason?.season_number] : null,
-    ([, tvId, , seasonNumber]) => getTVSeasonDetails(tvId, seasonNumber),
+    ([, tvId, , seasonNumber]) => cGetTVSeasonDetails(tvId, seasonNumber),
   );
 
   const mappedUnifiedEpisodes = useMemo(() => {

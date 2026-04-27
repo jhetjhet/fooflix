@@ -3,12 +3,12 @@ import { MediaCarousel } from "@/components/media-carousel";
 import {
   movieToMediaItem,
   tvShowToMediaItem,
-  getTMDBDetails,
 } from "@/services/tmdb";
 import type { MediaItem } from "@/types/tmdb";
 import { FlixMediaType } from "@/types/flix";
 import { flixToMediaItem } from "@/services/flix";
 import { fetchFlixItems } from "@/lib/flix-api.server";
+import { getTMDBDetails } from "@/lib/tmdb-api.server";
 
 export const revalidate = 60;
 
@@ -26,7 +26,8 @@ const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
 
   const mediaItems: MediaItem[] = [];
 
-  await Promise.all(tmdbDetailsRequests).then((results) => {
+  try {
+    await Promise.all(tmdbDetailsRequests).then((results) => {
     results.forEach((result) => {
       if ("title" in result) {
         mediaItems.push(movieToMediaItem(result));
@@ -35,6 +36,9 @@ const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
       }
     });
   });
+  } catch (error) {
+    console.error("Error fetching TMDB details for recent Flix items:", error);
+  }
 
   return mediaItems;
 };

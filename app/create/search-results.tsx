@@ -3,8 +3,9 @@ import { Search, Film, Tv, ChevronRight, Star, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import useSWR from "swr";
-import { getImageUrl, getMovieGenres, getTVGenres, isMovie } from "@/services/tmdb";
+import { getImageUrl, isMovie } from "@/services/tmdb";
 import { useCallback, useMemo } from "react";
+import { getMovieGenres, getTVGenres } from "@/lib/tmdb-api.client";
 
 // Fetch genres
 const fetchGenres = async (): Promise<TMDBGenre[]> => {

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { unifiedSeries } from "@/services/unified";
 import MediaUnifiedDetailPage from "@/components/media-unified-detail-page";
-import { getTMDBDetails } from "@/services/tmdb";
 import { fetchFlixDetails } from "@/lib/flix-api.server";
+import { getTMDBDetails } from "@/lib/tmdb-api.server";
 
 interface TVDetailPageProps {
   params: Promise<{ id: string }>;

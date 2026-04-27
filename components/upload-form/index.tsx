@@ -21,6 +21,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { UnifiedEpisode, UnifiedMovie } from "@/types/unified";
 import { isUnifiedEpisode } from "@/services/unified";
+import useConfig from "@/hooks/use-config";
 
 type SubtitleChanges = {
   added: FlixSubtitleForm[];
@@ -83,6 +84,7 @@ export function UploadForm({
   const [showUpload, setShowUpload] = useState(() => !mediaData?.has_video);
 
   const [isSubtUploadPending, startSubtUploadTransition] = useTransition();
+  const config = useConfig();
 
   const isDirty = useMemo(
     () => !subtitlesEqual(subtitles, savedSubtitles),
@@ -253,7 +255,7 @@ export function UploadForm({
             tmdbId={tmdbId}
             seasonNumber={seasonNumber}
             episodeNumber={episodeNumber}
-            basePath={process.env.NEXT_PUBLIC_NODE_API_URL}
+            basePath={config?.nodeApiUrl}
             onFinish={() => onVideoUploadFinish?.()}
           >
             {(uploaderState: UploaderState) => (

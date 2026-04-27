@@ -1,8 +1,8 @@
 import MediaUnifiedDetailPage from "@/components/media-unified-detail-page";
 import { notFound } from "next/navigation";
 import { unifiedMovie } from "@/services/unified";
-import { getTMDBDetails } from "@/services/tmdb";
 import { fetchFlixDetails } from "@/lib/flix-api.server";
+import { getTMDBDetails } from "@/lib/tmdb-api.server";
 
 interface MovieDetailPageProps {
   params: Promise<{ id: string }>;

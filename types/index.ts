@@ -17,3 +17,9 @@ export interface ResponseError {
   fields?: Record<string, string>;
   code?: string;
 }
+
+export type EnvConfig = {
+  nodeApiUrl: string;
+  socketUrl: string;
+  socketPath: string;
+}

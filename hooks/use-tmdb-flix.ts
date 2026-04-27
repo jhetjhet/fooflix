@@ -1,8 +1,8 @@
-import { getTMDBDetails } from "@/services/tmdb";
 import { TMDBMovieDetails, TMDBTVShowDetails } from "@/types/tmdb";
 import { FlixMediaType, FlixMovie, FlixSeries } from "@/types/flix";
 import useSWR from "swr";
 import { clientFetchFlixDetails } from "@/lib/flix-api.client";
+import { cGetTMDBDetails } from "@/lib/tmdb-api.client";
 
 const swrOptions = {
   revalidateOnFocus: false,
@@ -43,7 +43,7 @@ export default function useTMDBFlix<T extends Exclude<FlixMediaType, "all">>(
     error: tmdbMovieError,
   } = useSWR(
     type === "movie" && id ? (["tmdb", "movie", id] as const) : null,
-    ([, , tmdbId]) => getTMDBDetails({ type: "movie", id: tmdbId }),
+    ([, , tmdbId]) => cGetTMDBDetails({ type: "movie", id: tmdbId }),
     swrOptions,
   );
 
@@ -53,7 +53,7 @@ export default function useTMDBFlix<T extends Exclude<FlixMediaType, "all">>(
     error: tmdbSeriesError,
   } = useSWR(
     type === "series" && id ? (["tmdb", "tv", id] as const) : null,
-    ([, , tmdbId]) => getTMDBDetails({ type: "tv", id: tmdbId }),
+    ([, , tmdbId]) => cGetTMDBDetails({ type: "tv", id: tmdbId }),
     swrOptions,
   );
 
