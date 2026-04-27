@@ -43,7 +43,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
+        className={`${inter.variable} font-sans antialiased min-h-screen bg-background text-foreground pb-16`}
       >
         <AuthProvider initialUser={user}>
           <Navbar />

@@ -153,7 +153,7 @@ export type FlixSeries = z.infer<typeof FlixSeriesSchema>;
 export interface FlixBrowseFilters {
   query: string;
   type: FlixMediaType;
-  genre: number | null;
+  genre: string | null;
   sort_by: string;
   year: number | null;
   page: number;

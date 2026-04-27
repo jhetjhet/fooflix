@@ -88,10 +88,10 @@ export function BrowseFiltersComponent({
 
         {/* Genre Filter */}
         <Select
-          value={filters.genre?.toString() || "all"}
+          value={filters.genre || "all"}
           onValueChange={(value) =>
             onFiltersChange({
-              genre: value === "all" ? null : parseInt(value),
+              genre: value === "all" ? null : value,
               page: 1,
             })
           }
@@ -102,7 +102,7 @@ export function BrowseFiltersComponent({
           <SelectContent>
             <SelectItem value="all">All Genres</SelectItem>
             {flixGenres.map((genre) => (
-              <SelectItem key={genre.tmdb_id} value={genre.tmdb_id.toString()}>
+              <SelectItem key={genre.tmdb_id} value={genre.name}>
                 {genre.name}
               </SelectItem>
             ))}
