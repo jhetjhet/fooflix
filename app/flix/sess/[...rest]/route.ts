@@ -11,14 +11,8 @@ export async function GET(
     const { rest } = await ctx.params;
 
     const restPath = rest.join("/");
-
-    const searchParams = new URLSearchParams();
     
-    req.nextUrl.searchParams.forEach((value, key) => {
-      searchParams.set(key, value);
-    });
-    
-    const response = await flixFetch(`/${restPath}?${searchParams.toString()}`);
+    const response = await flixFetch(`/${restPath}?${req.nextUrl.searchParams.toString()}`);
 
     if (!response.ok) {
       return NextResponse.json(
