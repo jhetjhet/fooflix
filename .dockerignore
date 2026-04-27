@@ -1,0 +1,31 @@
+# Dependencies installed inside the image
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Environment files should not be copied into the image
+.env
+.env.*
+
+# Local logs and caches
+*.log
+.turbo/
+.cache/
+.eslintcache
+*.tsbuildinfo
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation files
+*.md
+
+# Git metadata
+.git/
