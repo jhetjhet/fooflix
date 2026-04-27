@@ -6,7 +6,7 @@ import {
   getTMDBDetails,
 } from "@/services/tmdb";
 import type { MediaItem } from "@/types/tmdb";
-import { FlixMediaType, FlixMovie, FlixSeries } from "@/types/flix";
+import { FlixMediaType } from "@/types/flix";
 import { flixToMediaItem } from "@/services/flix";
 import { fetchFlixItems } from "@/lib/flix-api.server";
 

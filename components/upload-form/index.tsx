@@ -253,7 +253,7 @@ export function UploadForm({
             tmdbId={tmdbId}
             seasonNumber={seasonNumber}
             episodeNumber={episodeNumber}
-            basePath={process.env.NEXT_PUBLIC_NODE_ENDPOINT}
+            basePath={process.env.NEXT_PUBLIC_NODE_API_URL}
             onFinish={() => onVideoUploadFinish?.()}
           >
             {(uploaderState: UploaderState) => (

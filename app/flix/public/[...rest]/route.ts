@@ -4,20 +4,20 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { path: string[] } },
+  ctx: RouteContext<'/flix/public/[...rest]'>
 ): Promise<NextResponse<FetchResponse<any>>> {
   try {
-    const rest = params.path.join("/");
+    const { rest } = await ctx.params;
 
-    const url = new URL(`${process.env.TMDB_API_BASE}/${rest}`);
+    const restPath = rest.join("/");
+
+    const url = new URL(`${process.env.DJANGO_API_URL}/${restPath}`);
 
     // copy all query params from incoming request
     req.nextUrl.searchParams.forEach((value, key) => {
       url.searchParams.set(key, value);
     });
-
-    url.searchParams.set("api_key", process.env.TMDB_API_KEY!);
-
+    
     const response = await fetch(url.toString());
 
     if (!response.ok) {
@@ -25,7 +25,7 @@ export async function GET(
         {
           ok: false,
           data: null,
-          error: { message: "Failed to fetch TMDB data" },
+          error: { message: "Failed to fetch Flix data" },
         },
         { status: 500 },
       );

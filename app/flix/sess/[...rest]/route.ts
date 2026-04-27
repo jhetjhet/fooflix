@@ -1,24 +1,24 @@
+import { flixFetch } from "@/lib/flix-api.server";
 import { resFail } from "@/lib/response-wrappers";
 import { FetchResponse } from "@/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  ctx: RouteContext<'/api/flix/[...rest]'>
+  ctx: RouteContext<'/flix/sess/[...rest]'>
 ): Promise<NextResponse<FetchResponse<any>>> {
   try {
     const { rest } = await ctx.params;
 
     const restPath = rest.join("/");
 
-    const url = new URL(`${process.env.DJANGO_API_URL}/api/${restPath}`);
-
-    // copy all query params from incoming request
+    const searchParams = new URLSearchParams();
+    
     req.nextUrl.searchParams.forEach((value, key) => {
-      url.searchParams.set(key, value);
+      searchParams.set(key, value);
     });
-
-    const response = await fetch(url.toString());
+    
+    const response = await flixFetch(`/${restPath}?${searchParams.toString()}`);
 
     if (!response.ok) {
       return NextResponse.json(
@@ -49,15 +49,3 @@ export async function GET(
     });
   }
 }
-
-
-// /api/flix/[...rest]/route.ts
-// export async function GET(
-//   req: NextRequest,
-//   ctx: RouteContext<'/api/flix/[...rest]'>
-// ) {
-//   const { rest } = await ctx.params;
-
-
-//   return Response.json({ message: rest.join("/") });
-// }

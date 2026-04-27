@@ -1,38 +1,19 @@
 "use server";
 
-import { FlixMediaType, FlixMovie, FlixResponse, FlixSeries, FlixTypeMap, FlixUser, FlixUserSchema, JWTResponse, JWTResponseSchema } from "@/types/flix";
-import { cookies, headers } from "next/headers";
+import { FlixMediaType, FlixResponse, FlixTypeMap, FlixUser, FlixUserSchema } from "@/types/flix";
 import typedFetch from "./typed-fetch";
+import { authFetch } from "./auth-fetch";
 
-const FLIX_API_BASE = `${process.env.DJANGO_API_URL}/api/`;
+export async function getFlixApiBase() {
+  return process.env.DJANGO_API_URL;
+}
 
 export async function flixFetch(
   endpoint: string, 
   options: RequestInit = {},
 ) {
-  const allHeaders = await headers();
-  const cookieStore = await cookies();
-  const sessionValue = cookieStore.get("session")?.value;
-  const sessionParse = sessionValue ? JSON.parse(sessionValue) : null;
-
-  const jwtResult = JWTResponseSchema.safeParse(sessionParse);
-
-  if(!jwtResult.success) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const session: JWTResponse = jwtResult.data;
-
-  const respHeaders = new Headers(options.headers);
-  const authToken = allHeaders.get("x-refreshed-token") || session?.access;
-
-  if (authToken) {
-    respHeaders.set("Authorization", `Bearer ${authToken}`);
-  }
-
-  return fetch(`${process.env.DJANGO_API_URL}${endpoint}`, {
+  return authFetch(`${await getFlixApiBase()}${endpoint}`, {
     ...options,
-    headers: respHeaders,
   });
 }
 
@@ -67,7 +48,26 @@ export async function fetchFlixItems<T extends FlixMediaType>(
   const searchParams = new URLSearchParams({
     ...params,
   });
-  const url = `${FLIX_API_BASE}${type}?${searchParams}`;
+  const url = `${await getFlixApiBase()}/api/${type}?${searchParams}`;
 
   return typedFetch<FlixResponse<FlixTypeMap[T]>>(url);
+}
+
+export async function fetchFlixDetails<T extends keyof FlixTypeMap>({
+  type,
+  id,
+  params = {},
+}: {
+  type: T;
+  id: string;
+  params?: Record<string, string>;
+}): Promise<FlixTypeMap[T]> {
+  const searchParams = new URLSearchParams({
+    ...params,
+  });
+  const url = `${await getFlixApiBase()}/api/${type}/${id}?${searchParams}`;
+
+  const response = await typedFetch<FlixTypeMap[T]>(url);
+
+  return response;
 }
