@@ -27,6 +27,14 @@ export async function generateMetadata({ params }: TVDetailPageProps): Promise<M
       siteName: "FooFlix",
       locale: "en_US",
     },
+
+    twitter: {
+      title: `Watch ${tmdbSeries.name} on FooFlix!`,
+      description: tmdbSeries.overview,
+      site: "@fooflix",
+      creator: "@fooflix",
+      images: tmdbSeries.poster_path ? [getBackdropUrl(tmdbSeries.poster_path)] : undefined,
+    }
   };
 
   if (tmdbSeries.poster_path) {
