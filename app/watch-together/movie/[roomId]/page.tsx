@@ -46,6 +46,14 @@ export async function generateMetadata({ params }: WatchTogetherMoviePageProps):
       siteName: "FooFlix",
       locale: "en_US",
     },
+
+    twitter: {
+      title: `Join the Watch Party for ${tmdbMovie.title} on FooFlix!`,
+      description: tmdbMovie.overview,
+      site: "@fooflix",
+      creator: "@fooflix",
+      images: tmdbMovie.poster_path ? [getBackdropUrl(tmdbMovie.poster_path)] : undefined,
+    }
   };
 
   if (tmdbMovie.poster_path) {

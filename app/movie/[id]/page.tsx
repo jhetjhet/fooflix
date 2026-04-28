@@ -27,6 +27,14 @@ export async function generateMetadata({ params }: MovieDetailPageProps): Promis
       siteName: "FooFlix",
       locale: "en_US",
     },
+
+    twitter: {
+      title: `Watch ${tmdbMovie.title} on FooFlix!`,
+      description: tmdbMovie.overview,
+      site: "@fooflix",
+      creator: "@fooflix",
+      images: tmdbMovie.poster_path ? [getBackdropUrl(tmdbMovie.poster_path)] : undefined,
+    }
   };
 
   if (tmdbMovie.poster_path) {
