@@ -195,7 +195,7 @@ function FileUploader(
         // This ensures that parts uploaded before a same-session pause are
         // not re-sent, even though init() was not called again.
         try {
-          const resp = await fetch(`${basePath}/upload/${chunkID}/`, { signal });
+          const resp = await fetch(`${basePath}/upload/${chunkID}/`);
           if (resp.ok) {
             const data: UploadStateResponse = await resp.json();
             resumeStateRef.current = {
@@ -208,7 +208,10 @@ function FileUploader(
           // Server has no record yet (first start) — keep existing resumeStateRef.
         }
 
-        if (signal.aborted) return;
+        if (signal.aborted) {
+          isRunningRef.current = false;
+          return;
+        }
 
         // Build the list of chunks still needing upload, skipping parts already
         // confirmed by the server so no bytes are re-sent over the network.
@@ -287,7 +290,6 @@ function FileUploader(
             }
             await fetch(`${basePath}/upload/finalize/${chunkID}/`, {
               method: "POST",
-              signal,
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
