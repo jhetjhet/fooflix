@@ -31,15 +31,13 @@ export default function ViewersList({
     <div className="pt-4 border-t border-border">
       <h3 className="font-semibold mb-3">Viewers ({userCount})</h3>
       <div className="flex flex-wrap gap-2">
-        {isLoading && (
-          <ViewListSkeleton />
-        )}
+        {isLoading && <ViewListSkeleton />}
 
         {!isLoading &&
           users.map((userItem) => (
             <div
               key={userItem.id}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${userItem.id === user?.id ? "bg-primary/10" : "bg-muted"} ${userItem.isHost ? "border border-primary" : ""}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${userItem.id === user?.id ? "bg-primary/20" : "bg-muted"} ${userItem.isHost ? "border border-primary" : ""}`}
             >
               <div className="w-6 h-6 rounded-full bg-muted-foreground/30" />
               <span>
