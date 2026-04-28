@@ -13,6 +13,7 @@ import type { FlixSubtitle } from "@/types/flix";
 import { cn } from "@/lib/utils";
 import { formatTime } from "./utils";
 import { SettingsMenu } from "./settings-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PlayerControlsProps {
   showControls: boolean;
@@ -83,6 +84,8 @@ export function PlayerControls({
   onFullscreen,
   isLimited = false,
 }: PlayerControlsProps) {
+  const isMobile = useIsMobile();
+
   return (
     <div
       className={cn(
@@ -108,8 +111,8 @@ export function PlayerControls({
       {/* Control Buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* Skip backward 10 s */}
-          {!isLimited && (
+          {/* Skip backward 10 s — desktop only; mobile uses center overlay */}
+          {!isLimited && !isMobile && (
             <Button
               variant="ghost"
               size="icon"
@@ -120,8 +123,8 @@ export function PlayerControls({
             </Button>
           )}
 
-          {/* Play / Pause */}
-          {!isLimited && (
+          {/* Play / Pause — desktop only; mobile uses center overlay */}
+          {!isLimited && !isMobile && (
             <Button
               variant="ghost"
               size="icon"
@@ -136,8 +139,8 @@ export function PlayerControls({
             </Button>
           )}
 
-          {/* Skip forward 10 s */}
-          {!isLimited && (
+          {/* Skip forward 10 s — desktop only; mobile uses center overlay */}
+          {!isLimited && !isMobile && (
             <Button
               variant="ghost"
               size="icon"
@@ -168,7 +171,10 @@ export function PlayerControls({
               max={1}
               step={0.02}
               onValueChange={onVolumeChange}
-              className="cursor-pointer"
+              className="
+                cursor-pointer
+                [&_[data-slot=slider-range]]:bg-primary/50
+              "
             />
           </div>
 
@@ -181,7 +187,8 @@ export function PlayerControls({
         </div>
 
         <div className="flex items-center gap-2">
-          {!isLimited && (
+          {/* Title — hidden on mobile */}
+          {!isLimited && !isMobile && (
             <span className="text-sm text-white/80 mr-2">{title}</span>
           )}
 

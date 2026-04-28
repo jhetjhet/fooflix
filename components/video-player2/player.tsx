@@ -16,11 +16,12 @@ import React, {
   useState,
 } from "react";
 import ReactPlayer from "react-player";
-import { Play } from "lucide-react";
+import { FastForward, Pause, Play, Rewind } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import type { VideoPlayer2Handle, VideoPlayer2Props } from "./types";
 import { PlayerControls } from "./controls";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
   function VideoPlayer2Internal(
@@ -58,6 +59,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
   ) {
     const playerRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const isMobile = useIsMobile();
 
     // ── Imperative handle ───────────────────────────────────────────────────
     useImperativeHandle(ref, () => ({
@@ -173,10 +175,23 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     // ── Click / double-click (mouse) ────────────────────────────────────────
     const handlePlayerClick = () => {
       if (isLimited) return;
+
+      // Controls hidden → reveal them only; never play/pause on this interaction.
+      if (!showControls) {
+        setShowControls(true);
+        scheduleHideControls();
+        return;
+      }
+
+      // Controls visible → toggle play/pause.
+      // 250 ms guard distinguishes single-click from double-click (fullscreen).
+      // On mobile, double-tap is caught in handleTouchEnd with preventDefault,
+      // so the click event never fires for double-taps.
       if (clickTimerRef.current) return;
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = null;
         handlePlayPause();
+        scheduleHideControls();
       }, 250);
     };
 
@@ -494,12 +509,46 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
           </div>
         )}
 
-        {/* Play icon overlay — shown when paused and not buffering */}
-        {!isPlaying && !isBuffering && (
+        {/* Play icon overlay — desktop only; mobile uses the center controls overlay */}
+        {!isPlaying && !isBuffering && !isMobile && (
           <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
             <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center">
               <Play className="size-10 fill-primary-foreground text-primary-foreground ml-1" />
             </div>
+          </div>
+        )}
+
+        {/* Mobile center controls — skip backward / play-pause / skip forward */}
+        {isMobile && !isLimited && (
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center justify-center gap-6 z-20 pointer-events-none transition-opacity duration-300",
+              showControls ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <button
+              type="button"
+              className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-black/50 text-white active:scale-95 transition-transform"
+              onClick={(e) => { e.stopPropagation(); handleSkipBackward(); }}
+            >
+              <Rewind className="size-7" />
+            </button>
+            <button
+              type="button"
+              className="pointer-events-auto flex items-center justify-center w-16 h-16 rounded-full bg-black/60 text-white active:scale-95 transition-transform"
+              onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
+            >
+              {isPlaying
+                ? <Pause className="size-8 fill-white" />
+                : <Play className="size-8 fill-white ml-1" />}
+            </button>
+            <button
+              type="button"
+              className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-black/50 text-white active:scale-95 transition-transform"
+              onClick={(e) => { e.stopPropagation(); handleSkipForward(); }}
+            >
+              <FastForward className="size-7" />
+            </button>
           </div>
         )}
 
