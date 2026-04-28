@@ -53,9 +53,15 @@ export const loginAction = withErrorHandling(
     const cookieOptions: Partial<ResponseCookie> = {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: parseInt(process.env.COOKIE_MAX_AGE || "604800"), // Default to 7 days
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      cookieOptions.secure = true;
+      cookieOptions.sameSite = "none";
+      cookieOptions.domain = process.env.COOKIE_DOMAIN;
     }
 
     cookieStore.set("session", JSON.stringify(session), cookieOptions);
@@ -67,10 +73,7 @@ export const loginAction = withErrorHandling(
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies();
 
-  cookieStore.delete({
-    name: "session",
-    path: "/",
-  });
+  cookieStore.delete('session');
 }
 
 export const registerAction = withErrorHandling(
