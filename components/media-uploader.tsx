@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import axios from "axios";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -109,12 +110,9 @@ function FileUploader(
         let alreadyUploaded = 0;
         let completedParts: number[] = [];
         try {
-          const resp = await fetch(`${basePath}/upload/${chunkid}/`);
-          if (resp.ok) {
-            const data: UploadStateResponse = await resp.json();
-            alreadyUploaded = data.uploaded ?? 0;
-            completedParts = data.completedParts ?? [];
-          }
+          const resp = await axios.get<UploadStateResponse>(`${basePath}/upload/${chunkid}/`);
+          alreadyUploaded = resp.data.uploaded ?? 0;
+          completedParts = resp.data.completedParts ?? [];
         } catch {
           // No existing upload — start fresh.
         }
@@ -151,7 +149,7 @@ function FileUploader(
       const id = chunkID;
       doFinish();
       if (id) {
-        fetch(`${basePath}/upload/cancel/${id}/`, { method: "DELETE" })
+          axios.delete(`${basePath}/upload/cancel/${id}/`)
           .catch((err) => console.error(err))
           .finally(() => {
             setBytesUploaded(null);
@@ -195,15 +193,12 @@ function FileUploader(
         // This ensures that parts uploaded before a same-session pause are
         // not re-sent, even though init() was not called again.
         try {
-          const resp = await fetch(`${basePath}/upload/${chunkID}/`);
-          if (resp.ok) {
-            const data: UploadStateResponse = await resp.json();
-            resumeStateRef.current = {
-              alreadyUploaded: data.uploaded ?? 0,
-              completedParts: data.completedParts ?? [],
-            };
-            setBytesUploaded(resumeStateRef.current.alreadyUploaded);
-          }
+          const resp = await axios.get<UploadStateResponse>(`${basePath}/upload/${chunkID}/`);
+          resumeStateRef.current = {
+            alreadyUploaded: resp.data.uploaded ?? 0,
+            completedParts: resp.data.completedParts ?? [],
+          };
+          setBytesUploaded(resumeStateRef.current.alreadyUploaded);
         } catch {
           // Server has no record yet (first start) — keep existing resumeStateRef.
         }
@@ -241,24 +236,18 @@ function FileUploader(
             form.append("chunk", file.slice(chunk.start, chunk.end));
 
             try {
-              const response = await fetch(`${basePath}/upload/${chunkID}/`, {
-                method: "POST",
+              await axios.post(`${basePath}/upload/${chunkID}/`, form, {
                 signal,
                 // NOTE: Do NOT set Content-Type manually — browser must set the
                 // multipart boundary automatically when body is FormData.
                 headers: {
                   "Content-Range": `bytes ${chunk.start}-${chunk.end}/${file.size}`,
                 },
-                body: form,
               });
-
-              if (!response.ok) {
-                throw new Error(`Chunk upload failed with status ${response.status}`);
-              }
 
               return; // success
             } catch (err) {
-              const isAbort = err instanceof DOMException && err.name === "AbortError";
+              const isAbort = axios.isCancel(err);
               if (isAbort || attempt === maxRetries - 1) throw err;
               // Exponential back-off: 500ms, 1000ms, 2000ms, ...
               await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
@@ -288,15 +277,11 @@ function FileUploader(
               body.season_number = seasonNumber;
               body.episode_number = episodeNumber;
             }
-            await fetch(`${basePath}/upload/finalize/${chunkID}/`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
-            });
+            await axios.post(`${basePath}/upload/finalize/${chunkID}/`, body);
             doFinish();
           })
           .catch((err) => {
-            const isAbort = err instanceof DOMException && err.name === "AbortError";
+            const isAbort = axios.isCancel(err);
             if (!isAbort) {
               console.error(err);
               setPause(true);
