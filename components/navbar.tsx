@@ -77,10 +77,10 @@ const NavAvatar = ({
           <p className="text-xs text-muted-foreground">{user?.email}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => alert("Profile page - Mock feature")}>
+        {/* <DropdownMenuItem onClick={() => alert("Profile page - Mock feature")}>
           <User className="mr-2 size-4" />
           Profile
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
