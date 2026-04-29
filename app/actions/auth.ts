@@ -5,8 +5,8 @@ import { flattenToSingleMessage } from "@/lib/utils";
 import { FetchResponse } from "@/types";
 import { FlixUserRegisterSchema, JWTResponse } from "@/types/flix";
 import { z } from "zod";
-import { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { resFail, resOk, withErrorHandling } from "@/lib/response-wrappers";
+import getCookieConfig from "@/lib/cookie-config";
 
 const loginSchema = z.object({
   username: z.string(),
@@ -50,21 +50,7 @@ export const loginAction = withErrorHandling(
 
     const cookieStore = await cookies();
 
-    const cookieOptions: Partial<ResponseCookie> = {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      path: "/",
-      maxAge: parseInt(process.env.COOKIE_MAX_AGE || "604800"), // Default to 7 days
-    }
-
-    if (process.env.NODE_ENV === "production") {
-      cookieOptions.secure = true;
-      cookieOptions.sameSite = "none";
-      cookieOptions.domain = process.env.COOKIE_DOMAIN;
-    }
-
-    cookieStore.set("session", JSON.stringify(session), cookieOptions);
+    cookieStore.set("session", JSON.stringify(session), getCookieConfig());
 
     return resOk(session, response.status);
   },

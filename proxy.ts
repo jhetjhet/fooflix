@@ -2,6 +2,7 @@
 import { JWTResponse } from "@/types/flix";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import getCookieConfig from "./lib/cookie-config";
 
 export async function proxy(request: NextRequest) {
   const sessionCookie = request.cookies.get("session")?.value;
@@ -27,11 +28,7 @@ export async function proxy(request: NextRequest) {
       };
 
       const response = NextResponse.next();
-      response.cookies.set("session", JSON.stringify(updatedSession), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-      });
+      response.cookies.set("session", JSON.stringify(updatedSession), getCookieConfig());
 
       response.headers.set("x-refreshed-token", updatedSession.access);
 

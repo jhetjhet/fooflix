@@ -7,11 +7,21 @@ import { WTRoom, WTRoomSchema } from "@/types/watch-together";
 import { getTMDBDetails } from "@/lib/tmdb-api.server";
 import { getBackdropUrl } from "@/services/tmdb";
 import { Metadata } from "next/dist/lib/metadata/types/metadata-interface";
+import { cookies } from "next/headers";
+import { JWTResponseSchema } from "@/types/flix";
 
 async function fetchRoomDetails(roomId: string): Promise<WTRoom | null> {
+  const cookieStore = await cookies();
+  const sessionValue = cookieStore.get("session")?.value;
+  const sessionParse = sessionValue ? JSON.parse(sessionValue) : null;
+
+  const jwtResult = JWTResponseSchema.safeParse(sessionParse);
+
+  const authToken = jwtResult.success ? jwtResult?.data?.access : process.env.NODE_SERVICE_TOKEN;
+
   const resp = await fetch(`${process.env.NODE_API_URL}/watch-together/${roomId}/`, {
     headers: {
-      "Authorization": `Bearer ${process.env.NODE_SERVICE_TOKEN}`,
+      "Authorization": `Bearer ${authToken}`,
     }
   });
 
