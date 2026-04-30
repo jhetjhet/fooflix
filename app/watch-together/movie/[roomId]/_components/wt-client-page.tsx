@@ -38,7 +38,7 @@ export default function WTClientPage({
     overlayMessage,
     showJoinButton,
     doManualPlay,
-  } = useWTStatus(syncState, userLeft, newUser);
+  } = useWTStatus(syncState, userLeft, newUser, roomDetails);
 
   useEffect(() => {
     if (!syncState) return;

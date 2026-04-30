@@ -1,4 +1,4 @@
-import { WTEventData, WTUserEvent } from "@/types/watch-together";
+import { WTEventData, WTRoom, WTUserEvent } from "@/types/watch-together";
 import { useEffect, useRef, useState } from "react";
 
 type WTViewerState =
@@ -21,6 +21,7 @@ export default function useWTStatus(
   syncState: WTEventData | null,
   userLeft: WTUserEvent | null,
   newUser: WTUserEvent | null,
+  roomDetails: WTRoom,
 ): WTStatusReturn {
   const [state, setState] = useState<WTViewerState>("idle");
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -51,6 +52,12 @@ export default function useWTStatus(
     }
   }, [newUser, hasUserInteracted]);
 
+  useEffect(() => {
+    if (!hasUserInteracted && !roomDetails.hasActiveHost) {
+      setState("host_left");
+    }
+  }, [hasUserInteracted, roomDetails]);
+
   const doManualPlay = () => {
     setHasUserInteracted(true);
     setState("waiting_for_sync");
@@ -65,7 +72,7 @@ export default function useWTStatus(
     ready_to_join: "Tap to join and start playback",
     locked: "",
     desynced: "Re-syncing with host...",
-    host_left: "Host left the session",
+    host_left: "Host disconnected. Waiting for them to return...",
   };
 
   return {
