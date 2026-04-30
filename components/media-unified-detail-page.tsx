@@ -53,8 +53,9 @@ export default function MediaUnifiedDetailPage({
             {mediaData && mediaData.video_url ? (
               <VideoPlayer2
                 title={mediaTtle}
-                // posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
+                posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
                 src={mediaData.video_url}
+                subtitles={mediaData.subtitles}
               />
             ) : (
               <VideoPlayer

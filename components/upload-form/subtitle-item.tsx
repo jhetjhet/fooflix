@@ -9,8 +9,10 @@ import {
 import { Button } from "../ui/button";
 import { Trash2 } from "lucide-react";
 import { FlixSubtitleForm } from "@/types/flix";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import ISO6391 from "iso-639-1";
+import { srtToVtt } from "@/lib/subt-helper";
+import { toast } from "@/hooks/use-toast";
 
 interface SubtitleItemProps {
   sub: FlixSubtitleForm;
@@ -27,6 +29,8 @@ export default function SubtitleItem({
   onRemove,
   subtitleOptions = [],
 }: SubtitleItemProps) {
+  const [isSrtConvertPending, startSrtConvert] = useTransition();
+
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   const subtitleFileRef = useRef<HTMLInputElement>(null);
@@ -53,7 +57,7 @@ export default function SubtitleItem({
         value={sub.srclng}
         onValueChange={(value) => {
           const name = ISO6391.getName(value);
-          
+
           onUpdate(sub.id, { srclng: value, name });
         }}
       >
@@ -67,11 +71,12 @@ export default function SubtitleItem({
             </SelectItem>
           )}
 
-          {isSelectOpen && subtitleOptions.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
+          {isSelectOpen &&
+            subtitleOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
         </SelectContent>
       </Select>
 
@@ -83,11 +88,32 @@ export default function SubtitleItem({
           accept=".srt,.vtt,.ass,.ssa"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file)
+
+            if (!file) return;
+
+            if (file.name.toLowerCase().endsWith(".srt")) {
+              startSrtConvert(async () => {
+                try {
+                  const vttFile = await srtToVtt(file);
+
+                  onUpdate(sub.id, {
+                    subtitle: vttFile,
+                    name: sub.name,
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Error",
+                    description: "Failed to convert SRT to VTT.",
+                    variant: "destructive",
+                  });
+                }
+              });
+            } else {
               onUpdate(sub.id, {
                 subtitle: file,
                 name: sub.name,
               });
+            }
           }}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
@@ -95,8 +121,9 @@ export default function SubtitleItem({
           variant="outline"
           size="sm"
           onClick={() => subtitleFileRef.current?.click()}
+          disabled={isSrtConvertPending}
         >
-          {sub.subtitle ? "Change" : "Upload"}
+          {isSrtConvertPending ? "Converting..." : sub.subtitle ? "Change" : "Upload"}
         </Button>
       </div>
 

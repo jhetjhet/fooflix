@@ -122,6 +122,7 @@ export default function WTClientPage({
           playbackRate={1}
           posterUrl={getBackdropUrl(movie.backdrop_path, "w1280")}
           src={movie.video_url || undefined}
+          subtitles={movie.subtitles}
           isLimited
         />
       </WTPlayerLock>
