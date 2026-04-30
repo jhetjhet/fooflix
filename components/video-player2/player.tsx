@@ -109,6 +109,15 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     const [activeCaption, setActiveCaption] = useState<number | null>(
       () => subtitles.find((s) => s.is_default)?.id ?? null,
     );
+    const [activeCueText, setActiveCueText] = useState<string | null>(null);
+
+    // ── Subtitle elevation ──────────────────────────────────────────────────
+    // Adjust these two values to reposition subtitles in each controls state.
+    const SUBTITLE_BOTTOM_CONTROLS_VISIBLE_PX = 96; // just above the controls bar
+    const SUBTITLE_BOTTOM_CONTROLS_HIDDEN_PX = 16;  // near bottom when controls are hidden
+    const subtitleBottom = showControls
+      ? SUBTITLE_BOTTOM_CONTROLS_VISIBLE_PX
+      : SUBTITLE_BOTTOM_CONTROLS_HIDDEN_PX;
 
     // ── Sync external props ─────────────────────────────────────────────────
     useEffect(() => {
@@ -129,13 +138,67 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     }, []);
 
     // ── Cleanup timers on unmount ───────────────────────────────────────────
+    const cueChangeCleanupRef = useRef<(() => void) | null>(null);
+
     useEffect(() => {
       return () => {
         if (hideControlsTimerRef.current)
           clearTimeout(hideControlsTimerRef.current);
         if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+        cueChangeCleanupRef.current?.();
       };
     }, []);
+
+    // ── Caption track mode helper ───────────────────────────────────────────
+    // Call only after video.textTracks is populated (handleLoadedMetadata or
+    // handleCaptionChange), never at mount time.
+    const applyTextTrackMode = (
+      video: HTMLVideoElement,
+      id: number | null,
+      pipActive = false,
+    ) => {
+      Array.from(video.textTracks).forEach((track) => {
+        const isActive =
+          id !== null &&
+          subtitles.some(
+            (s) =>
+              s.id === id &&
+              (track.language === s.srclng || track.label === s.name),
+          );
+        // In PiP: use "showing" so the browser renders native subtitles inside the PiP window.
+        // Otherwise: use "hidden" (fires cuechange but no native render — we render ourselves).
+        // "disabled" fully deactivates inactive tracks.
+        track.mode = isActive ? (pipActive ? "showing" : "hidden") : "disabled";
+      });
+    };
+
+    // ── Cue change listener ─────────────────────────────────────────────────
+    // Attaches a cuechange listener on the active TextTrack so we can render
+    // the current cue text as a custom positioned overlay.
+    const setupCueListener = (video: HTMLVideoElement, id: number | null) => {
+      cueChangeCleanupRef.current?.();
+      cueChangeCleanupRef.current = null;
+      setActiveCueText(null);
+
+      if (id === null) return;
+
+      const track = Array.from(video.textTracks).find((t) =>
+        subtitles.some(
+          (s) => s.id === id && (t.language === s.srclng || t.label === s.name),
+        ),
+      );
+
+      if (!track) return;
+
+      const onCueChange = () => {
+        const cue = track.activeCues?.[0] as VTTCue | undefined;
+        setActiveCueText(cue?.text ?? null);
+      };
+
+      track.addEventListener("cuechange", onCueChange);
+      cueChangeCleanupRef.current = () =>
+        track.removeEventListener("cuechange", onCueChange);
+    };
 
     // ── Controls auto-hide ──────────────────────────────────────────────────
     const scheduleHideControls = () => {
@@ -265,8 +328,11 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     const handleLoadedMetadata = (
       e: React.SyntheticEvent<HTMLVideoElement>,
     ) => {
-      const dur = e.currentTarget.duration;
-      if (isFinite(dur) && dur > 0) setDuration(dur);
+      const video = e.currentTarget;
+      if (isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
+      // textTracks are populated by now — apply caption state and start listening for cues.
+      applyTextTrackMode(video, activeCaption, isPip);
+      setupCueListener(video, activeCaption);
     };
 
     // ── Fullscreen ──────────────────────────────────────────────────────────
@@ -310,14 +376,29 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
       if (!video) return;
       try {
         if (!document.pictureInPictureElement) {
+          // Switch active track to "showing" BEFORE opening PiP so the
+          // PiP window gets native subtitle rendering from the start.
+          applyTextTrackMode(video, activeCaption, true);
+          // One-shot listener — fires when PiP closes via any means
+          // (our button OR the browser-native close button in the PiP overlay).
+          const onLeavePiP = () => {
+            video.removeEventListener("leavepictureinpicture", onLeavePiP);
+            setIsPip(false);
+            // Switch back to "hidden" so the custom overlay takes over again.
+            Array.from(video.textTracks).forEach((t) => {
+              if (t.mode === "showing") t.mode = "hidden";
+            });
+          };
+          video.addEventListener("leavepictureinpicture", onLeavePiP);
           await video.requestPictureInPicture();
           setIsPip(true);
         } else {
           await document.exitPictureInPicture();
-          setIsPip(false);
+          // leavepictureinpicture event handles setIsPip(false) and track mode reset.
         }
       } catch {
-        // PiP not supported or permission denied
+        // PiP not supported or permission denied — revert track mode.
+        applyTextTrackMode(video, activeCaption, false);
       }
     };
 
@@ -432,9 +513,8 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
       setActiveCaption(id);
       const video = playerRef.current;
       if (!video) return;
-      Array.from(video.textTracks).forEach((track, i) => {
-        track.mode = subtitles[i]?.id === id ? "showing" : "hidden";
-      });
+      applyTextTrackMode(video, id, isPip);
+      setupCueListener(video, id);
     };
 
     // ── Render ───────────────────────────────────────────────────────────────
@@ -467,6 +547,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
             width="100%"
             height="100%"
             style={{ position: "absolute", inset: 0 }}
+            crossOrigin="anonymous"
             onReady={onReady}
             onStart={onStart}
             onPlay={handlePlay}
@@ -480,7 +561,17 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onLoadedMetadata={handleLoadedMetadata}
-          />
+          >
+            {subtitles?.map((track, i) => (
+              <track
+                key={i}
+                kind={'subtitles'}
+                src={track.subtitle}
+                label={track.name}
+                srcLang={track.srclng}
+              />
+            ))}
+          </ReactPlayer>
         ) : (
           posterUrl && (
             <img
@@ -489,6 +580,19 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
               className="absolute inset-0 w-full h-full object-cover"
             />
           )
+        )}
+
+        {/* Subtitle overlay — slides up when controls are visible, drops to bottom when hidden.
+             Hidden in PiP mode because the browser renders native subtitles inside the PiP window. */}
+        {activeCueText && !isPip && (
+          <div
+            className="absolute left-0 right-0 flex justify-center z-30 pointer-events-none px-4 transition-[bottom] duration-300"
+            style={{ bottom: subtitleBottom }}
+          >
+            <span className="bg-black/70 text-white text-sm px-3 py-1 rounded max-w-[80%] text-center whitespace-pre-line leading-snug">
+              {activeCueText}
+            </span>
+          </div>
         )}
 
         {/* Click / double-click / double-tap capture area */}

@@ -77,6 +77,7 @@ export default function WTHostPage({
       <VideoPlayer2
         ref={vidPlayerRef}
         title={movie.title}
+        subtitles={movie.subtitles}
         playbackRate={1}
         posterUrl={getBackdropUrl(movie.backdrop_path, "w1280")}
         src={movie.video_url || undefined}
