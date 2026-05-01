@@ -44,21 +44,21 @@ export async function cGetTVSeasonDetails(
 
 export async function searchMovies(
   query: string,
-  page: number = 1,
+  params: Record<string, string> = {},
 ): Promise<TMDBResponse<TMDBMovie>> {
   return clientFetchTMDB<TMDBResponse<TMDBMovie>>("/search/movie", {
     query,
-    page: page.toString(),
+    ...params,
   });
 }
 
 export async function searchTVShows(
   query: string,
-  page: number = 1,
+  params: Record<string, string> = {},
 ): Promise<TMDBResponse<TMDBTVShow>> {
   return clientFetchTMDB<TMDBResponse<TMDBTVShow>>("/search/tv", {
     query,
-    page: page.toString(),
+    ...params,
   });
 }
 
