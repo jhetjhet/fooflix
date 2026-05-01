@@ -114,34 +114,42 @@ export default function MediaInfo({
 
       {/* Actions */}
       <div className="flex flex-col gap-3 pt-4">
-        {(isLoggedIn && !isTV) && (
-          <Button 
-            variant="outline" 
-            className="w-full 
-            gap-2" 
-            size="lg"
-            disabled={isCreateInviteLinkPending}
-            onClick={() => {
-              startCreateInviteLinkTransition(async () => {
-                const response = await createInviteLink(media.id.toString());
-
-                if (!response.ok) {
-                  toast({
-                    title: "Failed to create invite link",
-                    description: response.error?.message || "An error occurred while creating the invite link. Please try again.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-
-                router.push(`/watch-together/movie/${response?.data?.roomId}`);
+        <Button 
+          variant="outline" 
+          className="w-full 
+          gap-2" 
+          size="lg"
+          disabled={isCreateInviteLinkPending}
+          onClick={() => {
+            if (!isLoggedIn) {
+              toast({
+                title: "Login Required",
+                description: "You need to be logged in to create a watch together room.",
+                variant: "default",
               });
-            }}
-          >
-            <Users className="size-5" />
-            {isCreateInviteLinkPending ? "Creating Link..." : "Watch Together"}
-          </Button>
-        )}
+
+              return;
+            }
+
+            startCreateInviteLinkTransition(async () => {
+              const response = await createInviteLink(media.id.toString());
+
+              if (!response.ok) {
+                toast({
+                  title: "Failed to create invite link",
+                  description: response.error?.message || "An error occurred while creating the invite link. Please try again.",
+                  variant: "destructive",
+                });
+                return;
+              }
+
+              router.push(`/watch-together/movie/${response?.data?.roomId}`);
+            });
+          }}
+        >
+          <Users className="size-5" />
+          {isCreateInviteLinkPending ? "Creating Link..." : "Watch Together"}
+        </Button>
       </div>
 
       {/* Additional */}
