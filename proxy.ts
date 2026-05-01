@@ -1,5 +1,5 @@
 // middleware.ts
-import { JWTResponse } from "@/types/flix";
+import { JWTResponse, JWTResponseSchema } from "@/types/flix";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import getCookieConfig from "./lib/cookie-config";
@@ -9,20 +9,37 @@ export async function proxy(request: NextRequest) {
 
   if (!sessionCookie) return NextResponse.next();
 
-  const session = JSON.parse(sessionCookie) as JWTResponse;
+  let parsedSession = null;
+
+  try {
+    parsedSession = JSON.parse(sessionCookie);
+  } catch (error) {
+    // Invalid JSON, clear the cookie
+    const response = NextResponse.redirect(new URL("/", request.url));
+    response.cookies.delete("session");
+    return response;
+  }
+
+  const session = JWTResponseSchema.safeParse(parsedSession);
+
+  if (!session.success) {
+    const response = NextResponse.redirect(new URL("/", request.url));
+    response.cookies.delete("session");
+    return response;
+  }
 
   // Check if token is expired
-  if (Date.now() > session.access_expiration * 1000) {
+  if (Date.now() > session.data.access_expiration * 1000) {
     const res = await fetch(`${process.env.DJANGO_API_URL}/auth/jwt/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: session.refresh }),
+      body: JSON.stringify({ refresh: session.data.refresh }),
     });
 
     if (res.ok) {
       const data = await res.json();
       const updatedSession = {
-        ...session,
+        ...session.data,
         access: data.access,
         access_expiration: data.access_expiration,
       };
