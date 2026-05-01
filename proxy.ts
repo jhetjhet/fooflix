@@ -1,5 +1,4 @@
-// middleware.ts
-import { JWTResponse, JWTResponseSchema } from "@/types/flix";
+import { JWTResponseSchema } from "@/types/flix";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import getCookieConfig from "./lib/cookie-config";
@@ -15,7 +14,7 @@ export async function proxy(request: NextRequest) {
     parsedSession = JSON.parse(sessionCookie);
   } catch (error) {
     // Invalid JSON, clear the cookie
-    const response = NextResponse.redirect(new URL("/", request.url));
+    const response = NextResponse.next();
     response.cookies.delete("session");
     return response;
   }
@@ -23,7 +22,7 @@ export async function proxy(request: NextRequest) {
   const session = JWTResponseSchema.safeParse(parsedSession);
 
   if (!session.success) {
-    const response = NextResponse.redirect(new URL("/", request.url));
+    const response = NextResponse.next();
     response.cookies.delete("session");
     return response;
   }
@@ -52,7 +51,7 @@ export async function proxy(request: NextRequest) {
       return response;
     } else {
       // Refresh token failed (expired or revoked)
-      const response = NextResponse.redirect(new URL("/", request.url));
+      const response = NextResponse.next();
       response.cookies.delete("session");
       return response;
     }
