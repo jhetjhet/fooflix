@@ -24,7 +24,7 @@ export function MediaPagination({
   if (totalPages <= 1) return null;
 
   return (
-    <Pagination className="mt-10">
+    <Pagination>
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious

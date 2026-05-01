@@ -22,6 +22,7 @@ const fetchGenres = async (): Promise<TMDBGenre[]> => {
 
 type SearchResultsProps = {
   searchResults: (TMDBMovie | TMDBTVShow)[];
+  totalResults: number;
   isSearching: boolean;
   searchType: MediaType;
   selectedItem: TMDBMovie | TMDBTVShow | null;
@@ -30,6 +31,7 @@ type SearchResultsProps = {
 
 export default function SearchResults({
   searchResults,
+  totalResults,
   isSearching,
   searchType,
   selectedItem,
@@ -61,9 +63,7 @@ export default function SearchResults({
   return (
     <div className="lg:flex-1">
       <h2 className="text-lg font-semibold mb-4">
-        {searchResults.length > 0
-          ? `Search Results (${searchResults.length})`
-          : "Search Results"}
+        {totalResults > 0 ? `Search Results (${totalResults})` : "Search Results"}
       </h2>
 
       {isSearching ? (

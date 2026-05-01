@@ -58,7 +58,7 @@ function PaginationLink({
           variant: isActive ? "outline" : "ghost",
           size,
         }),
-        className,
+        `${isActive ? "text-primary" : ""} ${className}`,
       )}
       {...props}
     />
