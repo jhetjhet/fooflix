@@ -46,7 +46,10 @@ const fetchRecentFlixItems = async (): Promise<MediaItem[]> => {
 const fetchFlixMediaItems = async (
   type: FlixMediaType = "movie",
 ): Promise<MediaItem[]> => {
-  const data = await fetchFlixItems(type);
+  const data = await fetchFlixItems(type, {
+    ordering: "-date_upload",
+    page_size: "16",
+  });
 
   if (!data?.results) return [];
   return data.results.map((item) => flixToMediaItem(item));
