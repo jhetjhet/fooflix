@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loginAction, registerAction } from "@/app/actions/auth";
+import { toast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
   open: boolean;
@@ -26,9 +27,8 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
-  const [isLoginPending, startLoginTransition] = useTransition();
+  const [isAuthPending, startAuthTransition] = useTransition();
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -40,7 +40,9 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
     formData.append("password", password);
 
     if (isLogin) {
-      startLoginTransition(async () => {
+      setIsLoading(true);
+
+      startAuthTransition(async () => {
         const res = await loginAction(formData);
 
         if (!res.ok) {
@@ -53,6 +55,8 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
           setConfirmPassword("");
           onOpenChange(false);
         }
+
+        setIsLoading(false);
       });
     } else {
       if (password !== confirmPassword) {
@@ -62,26 +66,31 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
 
       formData.append("email", email);
 
-      const res = await registerAction(formData);
+      startAuthTransition(async () => {
+        const res = await registerAction(formData);
 
-      if (!res.ok) {
-        if (res.error.fields) {
-          setError(Object.values(res.error.fields)
-            .flat()
-            .join(" ") || "Registration failed");
+        if (!res.ok) {
+          if (res.error.fields) {
+            setError(Object.values(res.error.fields)
+              .flat()
+              .join(" ") || "Registration failed");
+          }
+          else {
+            setError(res.error?.message || "Registration failed");
+          }
+          return;
         }
-        else {
-          setError(res.error?.message || "Registration failed");
-        }
-        return;
-      }
 
-      setShowSuccessBanner(true);
+        toast({
+          title: "Registration successful",
+          description: "You can now log in with your new account.",
+          variant: "default",
+        })
 
-      setTimeout(() => {
-        setShowSuccessBanner(false);
-        toggleMode();
-      }, 2000);
+        setTimeout(() => {
+          toggleMode();
+        }, 1000);
+      });
     }
   };
 
@@ -92,12 +101,7 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
     setPassword("");
     setConfirmPassword("");
     setError("");
-    setShowSuccessBanner(false);
   };
-
-  useEffect(() => {
-    setIsLoading?.(isLoginPending);
-  }, [isLoginPending]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,14 +182,12 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
-          {showSuccessBanner && (
-            <Alert className="bg-green-50 border-green-200 text-green-800">
-              <AlertDescription>Registration successful!</AlertDescription>
-            </Alert>
-          )}
-
-          <Button type="submit" className="w-full mt-2">
-            {isLogin ? "Sign In" : "Create Account"}
+          <Button 
+            type="submit" 
+            className="w-full mt-2"
+            disabled={isAuthPending}
+          >
+            {isAuthPending ? "Processing..." : isLogin ? "Sign In" : "Sign Up"}
           </Button>
         </form>
 
@@ -197,6 +199,7 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
             type="button"
             onClick={toggleMode}
             className="text-primary font-medium hover:underline"
+            disabled={isAuthPending}
           >
             {isLogin ? "Sign Up" : "Sign In"}
           </button>

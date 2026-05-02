@@ -81,7 +81,7 @@ const NavAvatar = ({
           <User className="mr-2 size-4" />
           Profile
         </DropdownMenuItem> */}
-        <DropdownMenuSeparator />
+        {/* <DropdownMenuSeparator /> */}
         <DropdownMenuItem
           onClick={() => {
             setIsLogInLoading?.(true);
