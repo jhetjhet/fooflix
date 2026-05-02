@@ -84,7 +84,7 @@ export function AuthModal({ open, setIsLoading, onOpenChange }: AuthModalProps) 
         toast({
           title: "Registration successful",
           description: "You can now log in with your new account.",
-          variant: "default",
+          variant: "success",
         })
 
         setTimeout(() => {

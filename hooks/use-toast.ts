@@ -168,6 +168,12 @@ function toast({ ...props }: Toast) {
   };
 }
 
+toast.success = (props: Omit<Toast, "variant">) =>
+  toast({ ...props, variant: "success" });
+
+toast.warning = (props: Omit<Toast, "variant">) =>
+  toast({ ...props, variant: "warning" });
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 
