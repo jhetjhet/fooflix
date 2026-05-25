@@ -87,6 +87,7 @@ export interface TMDBVideos {
 }
 
 export interface TMDBMovieDetails extends Omit<TMDBMovie, "genre_ids"> {
+  imdb_id: string;
   genres: TMDBGenre[];
   runtime: number;
   status: string;

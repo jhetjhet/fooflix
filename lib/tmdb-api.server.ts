@@ -1,6 +1,6 @@
 import { TMDBTypeMap } from "@/types/tmdb";
 
-async function fetchTMDB<T>(
+export async function fetchTMDB<T>(
   endpoint: string,
   params: Record<string, string> = {},
 ): Promise<T> {

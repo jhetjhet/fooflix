@@ -50,10 +50,17 @@ export async function generateMetadata({ params }: MovieDetailPageProps): Promis
 export default async function MovieDetailPage({ params }: MovieDetailPageProps) {
   const { id } = await params;
 
-  const flixMovie = await fetchFlixDetails({
-    type: "movie",
-    id,
-  });
+  let flixMovie = null;
+
+  try {
+    flixMovie = await fetchFlixDetails({
+      type: "movie",
+      id,
+    });
+  } catch (error) {
+    
+  }
+
   const tmdbMovie = await getTMDBDetails({
     type: "movie",
     id: parseInt(id),

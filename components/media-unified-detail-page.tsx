@@ -12,6 +12,8 @@ import { VideoPlayer2 } from "./video-player2";
 import { useState } from "react";
 import { FlixMedia } from "@/types/flix";
 import MediaPageContainer from "./media-page/container";
+import { useAuthContext } from "@/context/authentication";
+import P2PPlayer from "./p2p-player";
 
 function isUnifiedSeries(
   media: TMDBMovieDetails | TMDBTVShowDetails,
@@ -28,6 +30,8 @@ export default function MediaUnifiedDetailPage({
   media,
   isLoading = false,
 }: MediaDetailPageProps) {
+  const { user } = useAuthContext();
+
   if (isLoading || !media) {
     return <MediaInfoSkeleton />;
   }
@@ -40,6 +44,12 @@ export default function MediaUnifiedDetailPage({
   const mediaTtle = isTV ? media.name : media.title;
   const mediaData: FlixMedia | null = isTV ? selectedEpisode : media;
 
+  let videoURL = mediaData?.video_url;
+
+  if (!isTV && user?.with_p2p_stream) {
+    videoURL = `http://localhost:8080/stream/${media.imdb_id}`;
+  }
+
   return (
     <MediaPageContainer
       title={mediaTtle}
@@ -50,11 +60,14 @@ export default function MediaUnifiedDetailPage({
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
           {/* Left Column - Video Player */}
           <div className="flex-1 min-w-0 space-y-6">
-            {mediaData && mediaData.video_url ? (
+            <P2PPlayer
+              movieId={media?.imdb_id ?? ""}
+            />
+            {/* {mediaData && videoURL ? (
               <VideoPlayer2
                 title={mediaTtle}
                 posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
-                src={mediaData.video_url}
+                src={videoURL}
                 subtitles={mediaData.subtitles}
               />
             ) : (
@@ -62,7 +75,7 @@ export default function MediaUnifiedDetailPage({
                 title={mediaTtle}
                 posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
               />
-            )}
+            )} */}
 
             {/* Title & Meta for Mobile */}
             <div className="lg:hidden">
