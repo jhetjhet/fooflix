@@ -1,19 +1,31 @@
 import { getImageUrl } from "@/services/tmdb";
 import { isUnifiedSeries } from "@/services/unified";
 import { UnifiedMovie, UnifiedSeries } from "@/types/unified";
-import { Star } from "lucide-react";
+import { Star, X } from "lucide-react";
 
 interface FlixFormMediaBaseProps {
   unifiedMedia: UnifiedMovie | UnifiedSeries;
+  onClose?: () => void;
 }
 
 export default function FlixFormMediaBase({
   unifiedMedia,
+  onClose,
 }: FlixFormMediaBaseProps) {
   const isTV = isUnifiedSeries(unifiedMedia);
 
   return (
     <div className="relative p-4 rounded-lg bg-card border border-border">
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="cursor-pointer absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Close"
+        >
+          <X className="size-4" />
+        </button>
+      )}
       <div className="flex items-start gap-4">
         <div className="w-20 h-28 rounded overflow-hidden bg-muted shrink-0">
           <img

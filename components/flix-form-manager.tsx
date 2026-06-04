@@ -35,9 +35,13 @@ export function useFlixManager() {
 
 interface FlixFormManagerProps {
   tmdbMedia: TMDBMovie | TMDBTVShow;
+  onClose?: () => void;
 }
 
-export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
+export default function FlixFormManager({
+  tmdbMedia,
+  onClose,
+}: FlixFormManagerProps) {
   const [isRegisterPending, startRegisterTransition] = useTransition();
   const [isDeleteFlixMedaPending, startDeleteFlixMediaTransition] =
     useTransition();
@@ -154,7 +158,7 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
   return (
     <div className="space-y-6">
       {/* Media info */}
-      <FlixFormMediaBase unifiedMedia={unifiedBase} />
+      <FlixFormMediaBase unifiedMedia={unifiedBase} onClose={onClose} />
 
       {uSeries && isUnifiedSeries(uSeries) && (
         <>
