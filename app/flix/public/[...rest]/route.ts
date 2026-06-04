@@ -27,7 +27,7 @@ export async function GET(
           data: null,
           error: { message: "Failed to fetch Flix data" },
         },
-        { status: 500 },
+        { status: response.status },
       );
     }
 

@@ -13,7 +13,7 @@ const swrOptions = {
 type MovieFlixData = {
   type: "movie";
   tmdb: TMDBMovieDetails | undefined;
-  flix: FlixMovie | undefined;
+  flix: FlixMovie | null;
   isLoading: boolean;
   error: Error | null;
   mutateFlix: () => void;
@@ -22,7 +22,7 @@ type MovieFlixData = {
 type SeriesFlixData = {
   type: "series";
   tmdb: TMDBTVShowDetails | undefined;
-  flix: FlixSeries | undefined;
+  flix: FlixSeries | null;
   isLoading: boolean;
   error: Error | null;
   mutateFlix: () => void;
@@ -62,10 +62,13 @@ export default function useTMDBFlix<T extends Exclude<FlixMediaType, "all">>(
     isLoading: flixMovieLoading,
     error: flixMovieError,
     mutate: mutateFlixMovie,
-  } = useSWR(
+  } = useSWR<FlixMovie | null, Error>(
     type === "movie" && id ? (["flix", "movie", id] as const) : null,
-    ([, , flixId]) => clientFetchFlixDetails({ type: "movie", id: flixId.toString() }),
-    swrOptions,
+    ([, , flixId]: readonly [string, string, number]) =>
+      clientFetchFlixDetails({ type: "movie", id: flixId.toString() }).catch(
+        () => null,
+      ),
+    { ...swrOptions, fallbackData: null },
   );
 
   const {
@@ -73,10 +76,13 @@ export default function useTMDBFlix<T extends Exclude<FlixMediaType, "all">>(
     isLoading: flixSeriesLoading,
     error: flixSeriesError,
     mutate: mutateFlixSeries,
-  } = useSWR(
+  } = useSWR<FlixSeries | null, Error>(
     type === "series" && id ? (["flix", "series", id] as const) : null,
-    ([, , flixId]) => clientFetchFlixDetails({ type: "series", id: flixId.toString() }),
-    swrOptions,
+    ([, , flixId]: readonly [string, string, number]) =>
+      clientFetchFlixDetails({ type: "series", id: flixId.toString() }).catch(
+        () => null,
+      ),
+    { ...swrOptions, fallbackData: null },
   );
 
   if (type === "series") {
