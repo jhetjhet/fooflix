@@ -2,10 +2,7 @@ import { TMDBMovie, TMDBTVShow } from "@/types/tmdb";
 import FlixFormMediaBase from "./flix-form-media-base";
 import { isTVShow } from "@/services/tmdb";
 import useTMDBFlix from "@/hooks/use-tmdb-flix";
-import {
-  isUnifiedEpisode,
-  isUnifiedSeries,
-} from "@/services/unified";
+import { isUnifiedEpisode, isUnifiedSeries } from "@/services/unified";
 import {
   createContext,
   useContext,
@@ -13,16 +10,15 @@ import {
   useState,
   useTransition,
 } from "react";
-import {
-  UnifiedEpisode,
-  UnifiedSeason,
-} from "@/types/unified";
+import { UnifiedEpisode, UnifiedSeason } from "@/types/unified";
 import FlixFormMediaSeries from "./flix-form-media-series";
 import { UploadForm } from "./upload-form";
 import { Button } from "./ui/button";
 import useFormActions from "@/hooks/use-form-actions";
 import useUnifiedMedia from "@/hooks/use-unified-media";
 import { FlixSubtitle } from "@/types/flix";
+import { deleteFlixMedia } from "@/app/actions/flix";
+import { toast } from "@/hooks/use-toast";
 
 interface FlixManagerContextValue {
   selectedSeason: number | null;
@@ -39,10 +35,16 @@ export function useFlixManager() {
 
 interface FlixFormManagerProps {
   tmdbMedia: TMDBMovie | TMDBTVShow;
+  onClose?: () => void;
 }
 
-export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
+export default function FlixFormManager({
+  tmdbMedia,
+  onClose,
+}: FlixFormManagerProps) {
   const [isRegisterPending, startRegisterTransition] = useTransition();
+  const [isDeleteFlixMedaPending, startDeleteFlixMediaTransition] =
+    useTransition();
 
   const { registerMovie, registerEpisode } = useFormActions();
 
@@ -55,10 +57,13 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
 
   const isTV = isTVShow(tmdbMedia);
 
-  const { isLoading: isTMDBFlixLoading, tmdb, flix, type } = useTMDBFlix(
-    isTV ? "series" : "movie",
-    tmdbMedia.id,
-  );
+  const {
+    isLoading: isTMDBFlixLoading,
+    tmdb,
+    flix,
+    type,
+    mutateFlix,
+  } = useTMDBFlix(isTV ? "series" : "movie", tmdbMedia.id);
 
   const {
     uMovie,
@@ -91,7 +96,8 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
   const unifiedBase = uMovie || uSeries;
   const unifiedMedia = uMovie || selectedEpisode;
 
-  const isMediaRegistered = Boolean(uMovie?.flix_id) || selectedEpisode?.flix_exists;
+  const isMediaRegistered =
+    Boolean(uMovie?.flix_id) || selectedEpisode?.flix_exists;
   const isEpisode = unifiedMedia && isUnifiedEpisode(unifiedMedia);
 
   useEffect(() => {
@@ -101,18 +107,49 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
 
     if (selectedEpisode) {
       const matchEpisode = uSeries.seasons
-        .find((season) => season.season_number === selectedEpisode.season_number)
-        ?.episodes.find((ep) => ep.episode_number === selectedEpisode.episode_number);
+        .find(
+          (season) => season.season_number === selectedEpisode.season_number,
+        )
+        ?.episodes.find(
+          (ep) => ep.episode_number === selectedEpisode.episode_number,
+        );
 
       setSelectedEpisode(matchEpisode ?? null);
     }
 
     if (selectedSeason) {
-      const matchSeason = uSeries.seasons.find((season) => season.season_number === selectedSeason.season_number);
-  
+      const matchSeason = uSeries.seasons.find(
+        (season) => season.season_number === selectedSeason.season_number,
+      );
+
       setSelectedSeason(matchSeason ?? null);
     }
   }, [uSeries]);
+
+  const handleDeleteFlixMedia = (isMovie: boolean, id: string) => {
+    startDeleteFlixMediaTransition(async () => {
+      const response = await deleteFlixMedia(isMovie, id);
+
+      if (!response.ok) {
+        toast({
+          title: "Error Un-Registering",
+          description:
+            response.error?.message ||
+            "An error occurred while un-registering the media.",
+          variant: "destructive",
+        });
+
+        return;
+      }
+
+      if (isMovie) {
+        patchUnifiedMovie({ id: undefined });
+      }
+      else {
+        mutateFlix();
+      }
+    });
+  };
 
   if (!unifiedBase) {
     return null;
@@ -121,30 +158,46 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
   return (
     <div className="space-y-6">
       {/* Media info */}
-      <FlixFormMediaBase unifiedMedia={unifiedBase} />
+      <FlixFormMediaBase unifiedMedia={unifiedBase} onClose={onClose} />
 
       {uSeries && isUnifiedSeries(uSeries) && (
-        <FlixFormMediaSeries
-          tv={uSeries}
-          selectedSeason={selectedSeason}
-          setSelectedSeason={setSelectedSeason}
-          selectedEpisode={selectedEpisode}
-          setSelectedEpisode={setSelectedEpisode}
-        />
+        <>
+          {uSeries.flix_id && (
+            <Button
+              variant="destructive"
+              className="w-full"
+              disabled={isDeleteFlixMedaPending}
+              onClick={() =>
+                handleDeleteFlixMedia(false, uSeries.id.toString())
+              }
+            >
+              {isDeleteFlixMedaPending ? "Removing..." : "Remove Series"}
+            </Button>
+          )}
+          <FlixFormMediaSeries
+            tv={uSeries}
+            selectedSeason={selectedSeason}
+            setSelectedSeason={setSelectedSeason}
+            selectedEpisode={selectedEpisode}
+            setSelectedEpisode={setSelectedEpisode}
+          />
+        </>
       )}
 
-      {(!isTMDBFlixLoading &&!isMediaRegistered && unifiedMedia) && (
+      {!isTMDBFlixLoading && !isMediaRegistered && unifiedMedia && (
         <Button
           className="w-full"
           disabled={isRegisterPending}
           onClick={() => {
             if (isEpisode && uSeries) {
               startRegisterTransition(async () => {
-                const [
-                  newEpisode,
-                  newSeason,
-                  updatedSeries,
-                ] = await registerEpisode(unifiedMedia, uSeries);
+                const [newEpisode, newSeason, updatedSeries] =
+                  await registerEpisode(unifiedMedia, uSeries);
+
+                if (!flix) {
+                  mutateFlix();
+                  return;
+                }
 
                 if (updatedSeries) {
                   updateUnifiedSeries(updatedSeries);
@@ -176,8 +229,20 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
           {isRegisterPending
             ? "Registering..."
             : isEpisode
-            ? "Register Episode"
-            : "Register Movie"}
+              ? "Register Episode"
+              : "Register Movie"}
+        </Button>
+      )}
+
+      {/* Un-Register */}
+      {uMovie && isMediaRegistered && (
+        <Button
+          variant="destructive"
+          className="w-full"
+          disabled={isDeleteFlixMedaPending}
+          onClick={() => handleDeleteFlixMedia(true, uMovie.id.toString())}
+        >
+          {isDeleteFlixMedaPending ? "Deleting..." : "Un-Register"}
         </Button>
       )}
 
@@ -204,7 +269,8 @@ export default function FlixFormManager({ tmdbMedia }: FlixFormManagerProps) {
               name: s.name,
               srclng: s.srclng,
               is_default: s.is_default,
-              subtitle: s.subtitle instanceof File ? "" : s.subtitle?.toString() || "",
+              subtitle:
+                s.subtitle instanceof File ? "" : s.subtitle?.toString() || "",
               subtitle_exists: Boolean(s.subtitle),
             }));
 

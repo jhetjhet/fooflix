@@ -57,6 +57,35 @@ export const createFlixMedia = withErrorHandling(
   },
 );
 
+export const deleteFlixMedia = withErrorHandling(
+  async (
+    isMovie: boolean,
+    tmdbId: string,
+  ): Promise<FetchResponse<any>> => {
+    if (!tmdbId) {
+      return resFail({
+        message: "TMDB ID is required for deletion",
+        status: 400,
+      });
+    }
+
+    const endpoint = isMovie ? "/api/movie/" : "/api/series/";
+
+    const response = await flixFetch(`${endpoint}${tmdbId}/`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      return resOk(null, response.status);
+    }
+
+    return resFail({
+      message: "Something went wrong while deleting the media",
+      status: response.status,
+    });
+  },
+);
+
 export const createFlixSeason = withErrorHandling(
   async (
     seriesId: string,

@@ -48,19 +48,19 @@ export async function clientFetchFlixDetails<T extends keyof FlixTypeMap>({
   type: T;
   id: string;
   params?: Record<string, string>;
-}): Promise<FlixTypeMap[T]> {
+}): Promise<FlixTypeMap[T] | null> {
   const searchParams = new URLSearchParams({
     ...params,
   });
   const url = `/flix/public/api/${type}/${id}?${searchParams}`;
 
-  const response = await typedFetch<FetchResponse<FlixTypeMap[T]>>(url);
+  try {
+    const response = await typedFetch<FetchResponse<FlixTypeMap[T]>>(url);
 
-  if (!response.ok) {
-    throw new Error(`Client Flix API error: ${response.status} - ${response.error}`);
+    return response.data;
+  } catch (error) {
+    return null;
   }
-
-  return response.data;
 }
 
 export async function clientFetchFlixUsers(users: WTUserEvent[]): Promise<FlixUser[]> {

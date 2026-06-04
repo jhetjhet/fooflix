@@ -25,16 +25,19 @@ type SearchResultsProps = {
   totalResults: number;
   isSearching: boolean;
   searchType: MediaType;
-  selectedItem: TMDBMovie | TMDBTVShow | null;
+  selectedItems: (TMDBMovie | TMDBTVShow)[];
   handleSelectItem: (item: TMDBMovie | TMDBTVShow) => void;
 };
+
+const getSelectedMediaKey = (item: TMDBMovie | TMDBTVShow) =>
+  `${isMovie(item) ? "movie" : "tv"}:${item.id}`;
 
 export default function SearchResults({
   searchResults,
   totalResults,
   isSearching,
   searchType,
-  selectedItem,
+  selectedItems,
   handleSelectItem,
 }: SearchResultsProps) {
   const { data: genres = [] } = useSWR("create-genres", fetchGenres);
@@ -82,17 +85,23 @@ export default function SearchResults({
         </div>
       ) : (
         <div className="space-y-3">
-          {searchResults.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleSelectItem(item)}
-              className={cn(
-                "w-full flex items-start gap-4 p-3 rounded-lg text-left transition-colors cursor-pointer",
-                selectedItem?.id === item.id
-                  ? "bg-primary/10 border border-primary"
-                  : "bg-card border border-border hover:bg-card/80",
-              )}
-            >
+          {searchResults.map((item) => {
+            const isSelected = selectedItems.some(
+              (selectedItem) =>
+                getSelectedMediaKey(selectedItem) === getSelectedMediaKey(item),
+            );
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelectItem(item)}
+                className={cn(
+                  "w-full flex items-start gap-4 p-3 rounded-lg text-left transition-colors cursor-pointer",
+                  isSelected
+                    ? "bg-primary/10 border border-primary"
+                    : "bg-card border border-border hover:bg-card/80",
+                )}
+              >
               <div className="w-16 h-24 rounded overflow-hidden bg-muted shrink-0">
                 {(isMovie(item) ? item.poster_path : item.poster_path) ? (
                   <img
@@ -146,9 +155,10 @@ export default function SearchResults({
                 </p>
               </div>
 
-              <ChevronRight className="size-5 text-muted-foreground shrink-0" />
-            </button>
-          ))}
+                <ChevronRight className="size-5 text-muted-foreground shrink-0" />
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

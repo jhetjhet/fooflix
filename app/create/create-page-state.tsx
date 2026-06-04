@@ -20,6 +20,11 @@ import { searchMovies, searchTVShows } from "@/lib/tmdb-api.client";
 import { MediaPagination } from "@/components/media-pagination";
 import { toast } from "@/hooks/use-toast";
 
+const MAX_FORM_MANAGERS = 5;
+
+const getSelectedMediaKey = (item: TMDBMovie | TMDBTVShow) =>
+  `${"title" in item ? "movie" : "tv"}:${item.id}`;
+
 export default function CreatePageState() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -35,9 +40,9 @@ export default function CreatePageState() {
     (TMDBMovie | TMDBTVShow)[]
   >([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<
-    TMDBMovie | TMDBTVShow | null
-  >(null);
+  const [selectedItems, setSelectedItems] = useState<
+    (TMDBMovie | TMDBTVShow)[]
+  >([]);
 
   const searchQuery = searchParams.get("q") || "";
   const searchType = (searchParams.get("type") as MediaType) || "movie";
@@ -58,7 +63,6 @@ export default function CreatePageState() {
 
     async function performSearch() {
       setIsSearching(true);
-      setSelectedItem(null);
 
       const fetchFunction =
         searchType === "movie" ? searchMovies : searchTVShows;
@@ -67,7 +71,7 @@ export default function CreatePageState() {
         const data = await fetchFunction(searchQuery, {
           page: currentPage.toString(),
         });
-        
+
         if (cancelled) return;
 
         setSearchResults(data.results);
@@ -114,7 +118,38 @@ export default function CreatePageState() {
   };
 
   const handleSelectItem = (item: TMDBMovie | TMDBTVShow) => {
-    setSelectedItem(item);
+    setSelectedItems((currentItems) => {
+      const mediaKey = getSelectedMediaKey(item);
+      const alreadySelected = currentItems.some(
+        (currentItem) => getSelectedMediaKey(currentItem) === mediaKey,
+      );
+
+      if (alreadySelected) {
+        return currentItems;
+      }
+
+      if (currentItems.length >= MAX_FORM_MANAGERS) {
+        toast({
+          title: "Selection Limit Reached",
+          description: `You can only open up to ${MAX_FORM_MANAGERS} form managers at once.`,
+          variant: "destructive",
+        });
+
+        return currentItems;
+      }
+
+      return [...currentItems, item];
+    });
+  };
+
+  const handleRemoveSelectedItem = (itemToRemove: TMDBMovie | TMDBTVShow) => {
+    const mediaKey = getSelectedMediaKey(itemToRemove);
+
+    setSelectedItems((currentItems) =>
+      currentItems.filter(
+        (currentItem) => getSelectedMediaKey(currentItem) !== mediaKey,
+      ),
+    );
   };
 
   return (
@@ -128,7 +163,6 @@ export default function CreatePageState() {
             value={searchType}
             onValueChange={(value: MediaType) => {
               setSearchResults([]);
-              setSelectedItem(null);
               updateURLParams({ type: value, page: 1, query: inputValue });
             }}
           >
@@ -198,7 +232,7 @@ export default function CreatePageState() {
               totalResults={totalResults}
               isSearching={isSearching}
               searchType={searchType}
-              selectedItem={selectedItem}
+              selectedItems={selectedItems}
               handleSelectItem={handleSelectItem}
             />
           </div>
@@ -206,8 +240,16 @@ export default function CreatePageState() {
 
         {/* Right Column - Upload Form */}
         <div className="lg:w-[480px] shrink-0 order-first lg:order-last">
-          {selectedItem ? (
-            <FlixFormManager tmdbMedia={selectedItem} />
+          {selectedItems.length > 0 ? (
+            <div className="space-y-6">
+              {selectedItems.map((selectedItem) => (
+                <FlixFormManager
+                  key={getSelectedMediaKey(selectedItem)}
+                  tmdbMedia={selectedItem}
+                  onClose={() => handleRemoveSelectedItem(selectedItem)}
+                />
+              ))}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-lg">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">

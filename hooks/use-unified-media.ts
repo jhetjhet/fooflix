@@ -151,6 +151,7 @@ export default function useUnifiedMedia() {
 
       return {
         ...prev,
+        flix_id: flix.id ?? null,
         has_video: flix.has_video ?? prev.has_video,
         extension: flix.extension ?? prev.extension,
         video_path: flix.video_path ?? prev.video_path,
