@@ -13,3 +13,4 @@ node_modules
 .next-env.d.ts
 *.log
 next-env.d.ts
+*.tsbuildinfo
