@@ -143,7 +143,7 @@ export default function useUnifiedMedia() {
         seasons: updatedSeasons,
       };
     });
-  }
+  };
 
   const patchUnifiedMovie = (flix: Partial<FlixMovie>) => {
     setUMovie((prev) => {
@@ -151,17 +151,23 @@ export default function useUnifiedMedia() {
 
       return {
         ...prev,
-        flix_id: flix.id ?? null,
-        has_video: flix.has_video ?? prev.has_video,
-        extension: flix.extension ?? prev.extension,
-        video_path: flix.video_path ?? prev.video_path,
-        video_url: flix.video_url ?? prev.video_url,
-        subtitles: flix.subtitles ?? prev.subtitles,
+        ...Object.fromEntries(
+          Object.entries({
+            flix_id: flix.id,
+            has_video: flix.has_video,
+            extension: flix.extension,
+            video_path: flix.video_path,
+            video_url: flix.video_url,
+            subtitles: flix.subtitles,
+          }).filter(([, value]) => value !== undefined),
+        ),
       };
     });
-  }
+  };
 
-  const patchUnifiedEpisode = (flix: Partial<FlixEpisode> & Pick<FlixEpisode, "season" | "episode_number">) => {
+  const patchUnifiedEpisode = (
+    flix: Partial<FlixEpisode> & Pick<FlixEpisode, "season" | "episode_number">,
+  ) => {
     setUSeries((prev) => {
       if (!prev) return null;
 
@@ -190,7 +196,7 @@ export default function useUnifiedMedia() {
         seasons: updatedSeasons,
       };
     });
-  }
+  };
 
   const controls = {
     createUnifiedMovie,
@@ -203,7 +209,7 @@ export default function useUnifiedMedia() {
     patchUnifiedMovie,
     patchUnifiedEpisode,
   };
-  
+
   if (uMovie) {
     return {
       ...controls,
