@@ -17,6 +17,7 @@ import {
   FlixSubtitleForm,
   FlixSubtitleFormSchema,
   FlixSubtitleSchema,
+  MediaProgress,
 } from "@/types/flix";
 
 export const createFlixMedia = withErrorHandling(
@@ -254,5 +255,29 @@ export const deleteFlixSubtitle = withErrorHandling(
     }
 
     return resOk(null, response.status);
+  },
+);
+
+export const recordMediaProgress = withErrorHandling(
+  async (
+    type: "movie" | "episode",
+    flixId: string,
+    progress: Omit<MediaProgress, "last_watched_at">,
+  ): Promise<FetchResponse<any>> => {
+    const data = {
+      media_type: type,
+      media_id: flixId,
+      ...progress,
+    };
+
+    const response = await flixFetch('/api/progress/', {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    
+    return handleResponse(response);
   },
 );

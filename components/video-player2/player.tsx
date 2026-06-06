@@ -49,6 +49,7 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
       onError,
       onProgress,
       onPlaying,
+      onLoadedMetadata,
       onTimeUpdate: onTimeUpdateProp,
       onDurationChange,
       onSeek,
@@ -328,6 +329,8 @@ export const VideoPlayer2 = forwardRef<VideoPlayer2Handle, VideoPlayer2Props>(
     const handleLoadedMetadata = (
       e: React.SyntheticEvent<HTMLVideoElement>,
     ) => {
+      onLoadedMetadata?.(e);
+
       const video = e.currentTarget;
       if (isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
       // textTracks are populated by now — apply caption state and start listening for cues.

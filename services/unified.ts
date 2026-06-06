@@ -29,6 +29,7 @@ export const DEFAULT_UNIFIED_EPISODE: UnifiedEpisode = {
   vote_average: 0,
   runtime: 0,
   // FlixMedia defaults
+  flix_id: 0,
   tmdb_id: "",
   extension: "",
   has_video: false, 
@@ -36,17 +37,20 @@ export const DEFAULT_UNIFIED_EPISODE: UnifiedEpisode = {
   video_url: "",
   subtitles: [],
   flix_exists: false,
+  progress: null,
 };
 
 function mapEpisode(flixEp: FlixEpisode): UnifiedEpisode {
   return {
     // FlixMedia fields
+    flix_id: flixEp.id,
     tmdb_id: flixEp.tmdb_id,
     extension: flixEp.extension,
     has_video: flixEp.has_video,
     video_path: flixEp.video_path,
     video_url: flixEp.video_url,
     subtitles: flixEp.subtitles,
+    progress: flixEp.progress ?? null,
     // TMDBEpisode fields — derive from flix where possible, default the rest
     id: parseInt(flixEp.tmdb_id, 10),
     name: flixEp.title,
@@ -83,7 +87,7 @@ export function unifiedMovie(
   tmdb: TMDBMovieDetails,
   flix: FlixMovie | null | undefined,
 ): UnifiedMovie {
-  const { id, extension, has_video, video_path, video_url, subtitles } = flix || DEFAULT_FLIX_MOVIE;
+  const { id, extension, has_video, video_path, video_url, subtitles, progress } = flix || DEFAULT_FLIX_MOVIE;
 
   return {
     ...tmdb,
@@ -92,6 +96,7 @@ export function unifiedMovie(
     video_path,
     video_url,
     subtitles,
+    progress,
     flix_id: id,
   };
 }

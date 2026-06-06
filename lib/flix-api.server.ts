@@ -2,7 +2,7 @@
 
 import { FlixMediaType, FlixResponse, FlixTypeMap, FlixUser, FlixUserSchema } from "@/types/flix";
 import typedFetch from "./typed-fetch";
-import { authFetch } from "./auth-fetch";
+import { authFetch, optAuthFetch } from "./auth-fetch";
 
 export async function getFlixApiBase() {
   return process.env.DJANGO_API_URL;
@@ -67,7 +67,13 @@ export async function fetchFlixDetails<T extends keyof FlixTypeMap>({
   });
   const url = `${await getFlixApiBase()}/api/${type}/${id}?${searchParams}`;
 
-  const response = await typedFetch<FlixTypeMap[T]>(url);
+  const response = await optAuthFetch(url);
 
-  return response;
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${type} details: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  
+  return data as FlixTypeMap[T];  
 }
