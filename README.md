@@ -10,6 +10,7 @@ Fooflix is the Next.js frontend for a larger full-stack app from [repo](https://
 - Cookie-based session handling for authentication
 - Stronger typing with TypeScript
 - Server-rendered components and hidden credentials
+- Resumable playback progress tracking (server or local)
 
 ## Local development
 
