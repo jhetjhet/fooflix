@@ -15,6 +15,7 @@ import type {
 export interface UnifiedGenre extends TMDBGenre, Pick<FlixGenre, "movie_count" | "series_count"> {}
 
 export interface UnifiedEpisode extends FlixMedia, TMDBEpisode {
+  flix_id: number;
   tmdb_id: string;
   flix_exists: boolean;
 }

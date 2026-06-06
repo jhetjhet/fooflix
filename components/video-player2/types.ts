@@ -60,6 +60,7 @@ export interface VideoPlayer2Props {
   onError?: ReactPlayerProps["onError"];
   onProgress?: ReactPlayerProps["onProgress"];
   onPlaying?: ReactPlayerProps["onPlaying"];
+  onLoadedMetadata?: ReactPlayerProps["onLoadedMetadata"];
   onTimeUpdate?: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
   onDurationChange?: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
   /** Called when the user manually seeks via the progress bar, with the target time in seconds. */

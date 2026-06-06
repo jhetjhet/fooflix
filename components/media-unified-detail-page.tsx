@@ -8,10 +8,12 @@ import { SeasonSelector } from "./season-selector";
 import { CastList } from "./cast-list";
 import { BackdropsGallery } from "./backdrops-gallery";
 import { UnifiedEpisode, UnifiedMovie, UnifiedSeries } from "@/types/unified";
-import { VideoPlayer2 } from "./video-player2";
-import { useState } from "react";
+import { VideoPlayer2, VideoPlayer2Handle } from "./video-player2";
+import { useEffect, useRef, useState } from "react";
 import { FlixMedia } from "@/types/flix";
 import MediaPageContainer from "./media-page/container";
+import useMediaProgress from "@/hooks/use-media-progress";
+import { useAuthContext } from "@/context/authentication";
 
 function isUnifiedSeries(
   media: TMDBMovieDetails | TMDBTVShowDetails,
@@ -32,6 +34,15 @@ export default function MediaUnifiedDetailPage({
     return <MediaInfoSkeleton />;
   }
 
+  const { user } = useAuthContext();
+
+  const vidPlayerRef = useRef<VideoPlayer2Handle>(null);
+
+  const { record, getLocalProgressRecord } = useMediaProgress(
+    vidPlayerRef,
+    Boolean(!user),
+  );
+
   const [selectedEpisode, setSelectedEpisode] = useState<UnifiedEpisode | null>(
     null,
   );
@@ -39,6 +50,20 @@ export default function MediaUnifiedDetailPage({
   const isTV = isUnifiedSeries(media);
   const mediaTtle = isTV ? media.name : media.title;
   const mediaData: FlixMedia | null = isTV ? selectedEpisode : media;
+  const activeMediaType = isTV ? "episode" : "movie";
+  const serverMediaId = isTV ? selectedEpisode?.flix_id?.toString() : media.flix_id;
+  const localMediaId = isTV
+    ? selectedEpisode?.tmdb_id ?? null
+    : media.flix_id;
+  const activeMediaId = user ? serverMediaId : (localMediaId ?? serverMediaId);
+
+  useEffect(() => {
+    return () => {
+      if (activeMediaId) {
+        record(activeMediaType, activeMediaId);
+      }
+    };
+  }, [record, activeMediaId, activeMediaType]);
 
   return (
     <MediaPageContainer
@@ -50,19 +75,44 @@ export default function MediaUnifiedDetailPage({
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
           {/* Left Column - Video Player */}
           <div className="flex-1 min-w-0 space-y-6">
-            {mediaData && mediaData.video_url ? (
-              <VideoPlayer2
-                title={mediaTtle}
-                posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
-                src={mediaData.video_url}
-                subtitles={mediaData.subtitles}
-              />
-            ) : (
-              <VideoPlayer
-                title={mediaTtle}
-                posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
-              />
-            )}
+            <VideoPlayer2
+              ref={vidPlayerRef}
+              title={mediaTtle}
+              posterUrl={getBackdropUrl(media.backdrop_path, "w1280")}
+              src={mediaData?.video_url}
+              subtitles={mediaData?.subtitles}
+              onLoadedMetadata={(e) => {
+                if (mediaData?.progress) {
+                  const resumeTime = mediaData.progress.last_position_seconds;
+
+                  vidPlayerRef.current?.seekTo(resumeTime);
+                } else if (activeMediaId) {
+                  const localProgress = getLocalProgressRecord(
+                    activeMediaType,
+                    activeMediaId,
+                  );
+
+                  if (localProgress?.last_position_seconds) {
+                    vidPlayerRef.current?.seekTo(localProgress.last_position_seconds);
+                  }
+                }
+              }}
+              onTimeUpdate={(e) => {
+                if (activeMediaId) {
+                  record(activeMediaType, activeMediaId);
+                }
+              }}
+              onSeek={(time) => {
+                if (activeMediaId) {
+                  record(activeMediaType, activeMediaId);
+                }
+              }}
+              onPause={() => {
+                if (activeMediaId) {
+                  record(activeMediaType, activeMediaId);
+                }
+              }}
+            />
 
             {/* Title & Meta for Mobile */}
             <div className="lg:hidden">

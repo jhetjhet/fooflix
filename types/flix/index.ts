@@ -9,12 +9,21 @@ export const FlixSubtitleSchema = zod.object({
   subtitle_exists: zod.boolean().default(false),
 });
 
+export const MediaProgressSchema = zod.object({
+  duration_seconds: zod.number().default(0),
+  is_finished: zod.boolean().default(false),
+  last_position_seconds: zod.number().default(0),
+  last_watched_at: zod.string().nullable(),
+  progress_seconds: zod.number().default(0),
+});
+
 export const FlixMediaSchema = zod.object({
   extension: zod.string().default("mp4"),
   has_video: zod.boolean().nullable().default(false),
   video_path: zod.string(),
   video_url: zod.string(),
   subtitles: zod.array(FlixSubtitleSchema),
+  progress: MediaProgressSchema.optional().nullable(),  
 });
 
 export const FlixGenreSchema = zod.object({
@@ -39,6 +48,7 @@ export const FlixMovieSchema = FlixBaseSchema.extend({
 }).merge(FlixMediaSchema);
 
 export const FlixEpisodeSchema = FlixMediaSchema.extend({
+  id: zod.number(),
   episode_number: zod.number(),
   season: zod.number(),
   title: zod.string(),
@@ -174,3 +184,5 @@ export type FlixEpisodeForm = z.infer<typeof FlixEpisodeFormSchema>;
 export type FlixSeasonForm = z.infer<typeof FlixSeasonFormSchema>;
 
 export type FlixSubtitleForm = z.infer<typeof FlixSubtitleFormSchema>;
+
+export type MediaProgress = z.infer<typeof MediaProgressSchema>;
