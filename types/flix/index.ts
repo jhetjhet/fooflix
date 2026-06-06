@@ -128,11 +128,22 @@ export const FlixSubtitleFormSchema = zod.object({
   srclng: zod.string().default("en"),
 });
 
+export const FlixResponseSchema = <T extends z.ZodTypeAny>(
+  itemSchema: T,
+) =>
+  zod.object({
+    number: zod.number(),
+    results: zod.array(itemSchema),
+    next_page_number: zod.number().nullable(),
+    previous_page_number: zod.number().nullable(),
+    total_pages: zod.number(),
+  });
+
 export interface FlixResponse<T> {
   number: number;
   results: T[];
-  next_page_number: number;
-  previous_page_number: number;
+  next_page_number: number | null;
+  previous_page_number: number | null;
   total_pages: number;
 }
 

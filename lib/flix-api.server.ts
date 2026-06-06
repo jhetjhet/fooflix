@@ -1,6 +1,6 @@
 "use server";
 
-import { FlixMediaType, FlixResponse, FlixTypeMap, FlixUser, FlixUserSchema } from "@/types/flix";
+import { FlixMediaType, FlixMovie, FlixMovieSchema, FlixResponse, FlixResponseSchema, FlixSeries, FlixSeriesSchema, FlixTypeMap, FlixUser, FlixUserSchema } from "@/types/flix";
 import typedFetch from "./typed-fetch";
 import { authFetch, optAuthFetch } from "./auth-fetch";
 
@@ -76,4 +76,24 @@ export async function fetchFlixDetails<T extends keyof FlixTypeMap>({
   const data = await response.json();
   
   return data as FlixTypeMap[T];  
+}
+
+export async function fetchRecentlyWatchedFlix(): Promise<(FlixMovie | FlixSeries)[]> {
+  const response = await flixFetch("/api/all/recently_watched/");
+
+  if (!response.ok) {
+    console.error("Failed to fetch recently watched items:", await response.text());
+    return [];
+  }
+
+  const data = await response.json() as FlixResponse<(FlixMovie | FlixSeries)>;
+
+  const dataRes = FlixResponseSchema(FlixMovieSchema.or(FlixSeriesSchema)).safeParse(data);
+
+  if (!dataRes.success) {
+    console.error("Invalid recently watched data:", dataRes.error);
+    return [];
+  }
+
+  return dataRes.data.results;
 }
