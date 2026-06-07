@@ -59,7 +59,11 @@ export const loginAction = withErrorHandling(
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies();
 
-  cookieStore.delete('session');
+  cookieStore.set("session", "", {
+    ...getCookieConfig(),
+    expires: new Date(0),
+    maxAge: 0,
+  });
 }
 
 export const registerAction = withErrorHandling(

@@ -15,7 +15,11 @@ export async function proxy(request: NextRequest) {
   } catch (error) {
     // Invalid JSON, clear the cookie
     const response = NextResponse.next();
-    response.cookies.delete("session");
+    response.cookies.set("session", "", {
+      ...getCookieConfig(),
+      expires: new Date(0),
+      maxAge: 0,
+    });
     return response;
   }
 
@@ -23,7 +27,11 @@ export async function proxy(request: NextRequest) {
 
   if (!session.success) {
     const response = NextResponse.next();
-    response.cookies.delete("session");
+    response.cookies.set("session", "", {
+      ...getCookieConfig(),
+      expires: new Date(0),
+      maxAge: 0,
+    });
     return response;
   }
 
@@ -52,7 +60,11 @@ export async function proxy(request: NextRequest) {
     } else {
       // Refresh token failed (expired or revoked)
       const response = NextResponse.next();
-      response.cookies.delete("session");
+      response.cookies.set("session", "", {
+        ...getCookieConfig(),
+        expires: new Date(0),
+        maxAge: 0,
+      });
       return response;
     }
   }
