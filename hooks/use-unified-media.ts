@@ -149,18 +149,24 @@ export default function useUnifiedMedia() {
     setUMovie((prev) => {
       if (!prev) return null;
 
+      const patch: Partial<UnifiedMovie> = {};
+
+      for (const key of Object.keys(flix) as Array<keyof FlixMovie>) {
+        if (!Object.prototype.hasOwnProperty.call(flix, key)) continue;
+
+        if (key === "id") {
+          patch.flix_id = flix.id as UnifiedMovie["flix_id"];
+          continue;
+        }
+
+        if (key in prev) {
+          (patch as Record<string, unknown>)[key] = flix[key];
+        }
+      }
+
       return {
         ...prev,
-        ...Object.fromEntries(
-          Object.entries({
-            flix_id: flix.id,
-            has_video: flix.has_video,
-            extension: flix.extension,
-            video_path: flix.video_path,
-            video_url: flix.video_url,
-            subtitles: flix.subtitles,
-          }).filter(([, value]) => value !== undefined),
-        ),
+        ...patch,
       };
     });
   };
